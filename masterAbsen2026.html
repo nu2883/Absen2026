@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daftar admin — Absensi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F2F5F4; --card: #FFFFFF; --ink: #10211E; --ink2: #4F5F5B; --line: #DDE5E2;
+  --field: #7C8C88; --teal: #0F766E; --teal-ink: #0B5B54; --teal-bg: #E1F2EF;
+  --err: #B42318; --err-bg: #FDECEA;
+}
+[v-cloak] { display: none; }
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-size: 16px; line-height: 1.5; }
+.wrap { max-width: 560px; margin: 0 auto; padding: 28px 16px 48px; display: flex; flex-direction: column; gap: 20px; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.mark { width: 40px; height: 40px; border-radius: 12px; background: var(--teal); color: #fff; display: flex; align-items: center; justify-content: center; }
+.brand b { font-size: 18px; font-weight: 800; letter-spacing: -0.01em; }
+.demo { padding: 10px 14px; border-radius: 12px; background: #FDEFD6; color: #7A4300; font-size: 13.5px; font-weight: 600; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 24px 20px; }
+h1 { margin: 0 0 6px; font-size: 26px; line-height: 1.2; font-weight: 800; letter-spacing: -0.02em; }
+h2 { margin: 28px 0 4px; padding-top: 24px; border-top: 1px solid var(--line); font-size: 18px; line-height: 1.3; font-weight: 800; letter-spacing: -0.01em; }
+h1:focus { outline: none; }
+.lead { margin: 0 0 20px; font-size: 15px; color: var(--ink2); }
+.lead.tight { margin-bottom: 12px; }
+.stack { display: flex; flex-direction: column; gap: 16px; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+label { font-size: 14px; font-weight: 700; }
+.hint { font-size: 13px; font-weight: 500; color: var(--ink2); }
+.input { width: 100%; height: 48px; padding: 0 14px; border: 1px solid var(--field); border-radius: 12px; background: #fff; color: var(--ink); font: inherit; font-size: 16px; }
+.input::placeholder { color: #6B7B77; }
+.input:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px rgba(15,118,110,.28); }
+.input[aria-invalid="true"] { border-color: var(--err); }
+.pw { position: relative; }
+.pw .input { padding-right: 96px; }
+.pw button { position: absolute; right: 6px; top: 6px; height: 36px; padding: 0 12px; border: 0; border-radius: 8px; background: transparent; color: var(--teal-ink); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.err { margin: 0; font-size: 13px; font-weight: 600; color: var(--err); }
+.err:empty { display: none; }
+.alert { margin: 0 0 16px; padding: 12px 14px; border-radius: 12px; background: var(--err-bg); color: #8A1C12; font-size: 14px; font-weight: 600; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 48px; padding: 0 20px; border-radius: 12px; border: 1px solid transparent; font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
+.btn:focus-visible, .pw button:focus-visible, .linkbtn:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+.btn-primary { background: var(--teal); color: #fff; }
+.btn-secondary { background: #fff; color: var(--ink); border-color: var(--field); }
+.btn-text { background: transparent; color: var(--ink2); padding: 0 8px; }
+.btn-block { width: 100%; }
+.btn[disabled] { background: #CBD7D3; color: #2F3F3B; border-color: transparent; cursor: not-allowed; }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 24px; }
+.emailbox { margin: 0 0 16px; display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); }
+.emailbox code { flex: 1 1 0; min-width: 0; overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 14px; font-weight: 600; }
+.emailbox .btn { height: 38px; padding: 0 14px; font-size: 14px; }
+.btn-secondary[disabled] { background: #fff; color: #6B7B77; border-color: var(--line); }
+.linkbtn { border: 0; background: none; padding: 0; font: inherit; font-size: 14px; font-weight: 700; color: var(--teal-ink); text-decoration: underline; cursor: pointer; margin: -8px 0 16px; }
+.done-icon { width: 56px; height: 56px; border-radius: 28px; background: var(--teal-bg); color: var(--teal); display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
+.idbox { margin: 4px 0 14px; padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--bg); text-align: center; }
+.idbox small { display: block; font-size: 13px; font-weight: 600; color: var(--ink2); }
+.idbox output { display: block; margin: 4px 0 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 32px; font-weight: 800; letter-spacing: 0.04em; overflow-wrap: anywhere; }
+.note { margin: 14px 0 0; font-size: 14px; color: var(--ink2); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.trap { position: absolute; left: -9999px; top: auto; width: 1px; height: 1px; overflow: hidden; }
+@media (min-width: 640px) { .wrap { padding-top: 48px; } .card { padding: 32px; } }
+@media (max-width: 480px) {
+  .done-actions { flex-direction: column; align-items: stretch; }
+  .done-actions .btn { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<div id="app" v-cloak>
+<main class="wrap">
+
+  <div class="brand">
+    <div class="mark" aria-hidden="true">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+    </div>
+    <b>Absensi</b>
+  </div>
+
+  <div id="demo" class="demo" v-if="demo">Mode contoh: API_URL belum diisi, jadi tidak ada data yang dikirim ke mana pun.</div>
+
+  <section class="card" aria-label="Pendaftaran admin">
+    <div id="alert" class="alert" role="alert" v-show="alertMsg">{{ alertMsg }}</div>
+
+    <!-- FORM PENDAFTARAN -->
+    <form id="form" novalidate v-if="!done" @submit.prevent="submit">
+      <h1 tabindex="-1">Daftarkan kantor Anda</h1>
+      <p class="lead">Daftar satu kali. Anda mendapat ID_APP yang dipakai pegawai untuk masuk.</p>
+
+      <div class="stack">
+        <div class="field">
+          <label for="nama_kantor">Nama kantor</label>
+          <input class="input" id="nama_kantor" ref="nama_kantor" v-model="form.nama_kantor" autocomplete="organization" maxlength="100"
+                 aria-describedby="err-nama_kantor" :aria-invalid="errors.nama_kantor ? 'true' : false">
+          <p class="err" id="err-nama_kantor">{{ errors.nama_kantor }}</p>
+        </div>
+        <div class="field">
+          <label for="admin_nama">Nama admin</label>
+          <input class="input" id="admin_nama" ref="admin_nama" v-model="form.admin_nama" autocomplete="name" maxlength="100"
+                 aria-describedby="err-admin_nama" :aria-invalid="errors.admin_nama ? 'true' : false">
+          <p class="err" id="err-admin_nama">{{ errors.admin_nama }}</p>
+        </div>
+        <div class="field">
+          <label for="admin_email">Email admin</label>
+          <input class="input" id="admin_email" ref="admin_email" v-model="form.admin_email" type="email" inputmode="email" autocomplete="email" maxlength="120"
+                 aria-describedby="err-admin_email" :aria-invalid="errors.admin_email ? 'true' : false">
+          <p class="err" id="err-admin_email">{{ errors.admin_email }}</p>
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="pw">
+            <input class="input" id="password" ref="password" v-model="form.password" :type="showPw ? 'text' : 'password'" autocomplete="new-password" maxlength="100"
+                   aria-describedby="hint-password err-password" :aria-invalid="errors.password ? 'true' : false">
+            <button type="button" id="togglePw" :aria-pressed="showPw ? 'true' : 'false'" @click="showPw = !showPw">{{ showPw ? 'Sembunyikan' : 'Tampilkan' }}</button>
+          </div>
+          <span class="hint" id="hint-password">Minimal 8 karakter.</span>
+          <p class="err" id="err-password">{{ errors.password }}</p>
+        </div>
+      </div>
+
+      <h2>Spreadsheet dan folder Drive Anda</h2>
+      <p class="lead tight">Data absensi tersimpan di Google milik Anda. Bagikan Spreadsheet dan folder Drive sebagai <b>Editor</b> ke email ini, lalu tempel tautannya di bawah.</p>
+      <div class="emailbox">
+        <code id="engineEmail">{{ engineText }}</code>
+        <button type="button" class="btn btn-secondary" id="copyEmail" :disabled="!engineEmail" @click="copyEmail">{{ copied.email ? 'Tersalin' : 'Salin' }}</button>
+      </div>
+      <button type="button" class="linkbtn" id="reloadInfo" v-if="engineState === 'error'" @click="reloadInfo">Muat ulang email</button>
+
+      <div class="stack">
+        <div class="field">
+          <label for="spreadsheet">Tautan Spreadsheet</label>
+          <input class="input" id="spreadsheet" ref="spreadsheet" v-model="form.spreadsheet" inputmode="url" autocomplete="off"
+                 placeholder="https://docs.google.com/spreadsheets/d/…"
+                 aria-describedby="err-spreadsheet" :aria-invalid="errors.spreadsheet ? 'true' : false">
+          <p class="err" id="err-spreadsheet">{{ errors.spreadsheet }}</p>
+        </div>
+        <div class="field">
+          <label for="drive_folder">Tautan folder Drive</label>
+          <input class="input" id="drive_folder" ref="drive_folder" v-model="form.drive_folder" inputmode="url" autocomplete="off"
+                 placeholder="https://drive.google.com/drive/folders/…"
+                 aria-describedby="err-drive_folder" :aria-invalid="errors.drive_folder ? 'true' : false">
+          <p class="err" id="err-drive_folder">{{ errors.drive_folder }}</p>
+        </div>
+      </div>
+
+      <!-- jebakan bot: manusia tidak melihat dan tidak mengisinya -->
+      <div class="trap" aria-hidden="true"><label>Jangan diisi<input id="website" v-model="form.website" tabindex="-1" autocomplete="off"></label></div>
+
+      <div class="actions">
+        <button type="submit" class="btn btn-primary btn-block" id="submit" :disabled="busy" :aria-busy="busy ? 'true' : 'false'">{{ busy ? 'Mendaftarkan…' : 'Daftar' }}</button>
+      </div>
+    </form>
+
+    <!-- HASIL -->
+    <section id="done" v-else>
+      <div class="done-icon" aria-hidden="true">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+      </div>
+      <h1 tabindex="-1" ref="doneTitle">Pendaftaran berhasil</h1>
+      <p class="lead">{{ doneNama }} sudah aktif.</p>
+      <div class="idbox"><small>ID_APP kantor Anda</small><output id="idapp">{{ idApp }}</output></div>
+      <div class="actions done-actions" style="margin-top:0">
+        <button type="button" class="btn btn-primary" id="copyId" @click="copyId">{{ copied.id ? 'Tersalin' : 'Salin ID_APP' }}</button>
+        <button type="button" class="btn btn-text" id="again" @click="again">Daftarkan kantor lain</button>
+      </div>
+      <p class="note">Simpan ID_APP ini. Pegawai memasukkannya saat login pertama dan tidak perlu mengetik ulang di kunjungan berikutnya. Spreadsheet Anda sudah diisi sheet <b>pengaturan</b>, <b>pegawai</b>, <b>surat_tugas</b>, dan <b>absensi</b>.</p>
+    </section>
+
+    <span class="sr" role="status" aria-live="polite">{{ liveMsg }}</span>
+  </section>
+
+</main>
+</div>
+
+<noscript><p style="max-width:560px;margin:0 auto;padding:16px">Halaman ini memerlukan JavaScript.</p></noscript>
+
+<script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.min.js"></script>
+<script>
+// ============================================================
+// KONFIGURASI: tempel URL web app masterAbsen (hasil Deploy > Web app)
+// ============================================================
+const API_URL = 'https://script.google.com/macros/s/AKfycbxdv5vVFcDJHmAWS2el5px-TC3sGQ2qrHkCkJqKvz1ERHzQHLQzdpOtGnMcGwFskLpmmw/exec';
+
+const DEMO = !/^https:\/\/script\.google(usercontent)?\.com\//.test(API_URL);
+const FIELDS = ['nama_kantor', 'admin_nama', 'admin_email', 'password', 'spreadsheet', 'drive_folder'];
+
+// Validasi di browser (server tetap memeriksa ulang)
+const rules = {
+  nama_kantor: (v) => v.trim().length >= 3 ? '' : 'Isi nama kantor, minimal 3 huruf.',
+  admin_nama: (v) => v.trim().length >= 2 ? '' : 'Isi nama admin.',
+  admin_email: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim()) ? '' : 'Isi email yang valid.',
+  password: (v) => v.length >= 8 ? '' : 'Password minimal 8 karakter.',
+  spreadsheet: (v) => /\/spreadsheets\/d\/[\w-]{20,}/.test(v) || /^[\w-]{20,}$/.test(v.trim()) ? '' : 'Tempel tautan Spreadsheet dari Google.',
+  drive_folder: (v) => /\/folders\/[\w-]{20,}/.test(v) || /[?&]id=[\w-]{20,}/.test(v) || /^[\w-]{20,}$/.test(v.trim()) ? '' : 'Tempel tautan folder dari Google Drive.'
+};
+
+// ---------- API ----------
+async function api(payload, timeoutMs) {
+  if (DEMO) return demoApi(payload);
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), timeoutMs || 60000);
+  try {
+    // text/plain menghindari preflight CORS yang tidak didukung Apps Script
+    const res = await fetch(API_URL, {
+      method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload), signal: ctl.signal
+    });
+    return await res.json();
+  } catch (e) {
+    return { ok: false, code: 'JARINGAN', message: e && e.name === 'AbortError'
+      ? 'Server terlalu lama menjawab. Klik Daftar sekali lagi; permintaan tidak akan terdaftar dua kali.'
+      : 'Tidak bisa terhubung ke server. Periksa koneksi internet Anda.' };
+  } finally { clearTimeout(timer); }
+}
+
+// ---------- mode contoh (tanpa server) ----------
+function demoApi(p) { return new Promise((resolve) => setTimeout(() => resolve(demoHandle(p)), 700)); }
+function demoHandle(p) {
+  if (p.action === 'info') return { ok: true, engine_email: 'engine.absensi@gmail.com', registration_open: true, version: 'contoh' };
+  const bad = (v) => /gagal/i.test(v || '') || !(/\/spreadsheets\/d\/[\w-]{20,}|\/folders\/[\w-]{20,}|^[\w-]{20,}$/.test(v || ''));
+  const ss = bad(p.spreadsheet) ? { ok: false, message: 'Spreadsheet tidak bisa dibuka atau diedit. Pastikan sudah dibagikan sebagai Editor ke email engine.' } : { ok: true };
+  const fd = bad(p.drive_folder) ? { ok: false, message: 'Folder tidak bisa dibuka atau diedit. Pastikan sudah dibagikan sebagai Editor ke email engine.' } : { ok: true };
+  if (p.action === 'register') {
+    if (!(ss.ok && fd.ok)) return { ok: false, code: 'AKSES_DITOLAK', message: 'Akses belum benar.', spreadsheet: ss, folder: fd };
+    const al = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789', pick = () => al[Math.floor(Math.random() * al.length)];
+    const id = 'ABS-' + Array.from({ length: 4 }, pick).join('') + '-' + Array.from({ length: 4 }, pick).join('');
+    return { ok: true, status: 'ACTIVE', id_app: id, tenant_id: 'T-CONTOH', nama_kantor: (p.nama_kantor || '').trim() };
+  }
+  return { ok: false, message: 'Aksi tidak dikenal.' };
+}
+
+// ---------- kode permintaan (idempoten: kirim ulang tidak membuat tenant ganda) ----------
+function newRequestId() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
+}
+function readRequestId() { try { return sessionStorage.getItem('absen_reg_id') || ''; } catch (e) { return ''; } }
+function writeRequestId(id) { try { sessionStorage.setItem('absen_reg_id', id); } catch (e) { /* tanpa storage */ } }
+
+// ============================================================
+// APLIKASI VUE 2
+// ============================================================
+new Vue({
+  el: '#app',
+
+  data() {
+    return {
+      demo: DEMO,
+      form: { nama_kantor: '', admin_nama: '', admin_email: '', password: '', spreadsheet: '', drive_folder: '', website: '' },
+      errors: { nama_kantor: '', admin_nama: '', admin_email: '', password: '', spreadsheet: '', drive_folder: '' },
+      showPw: false,
+      alertMsg: '',
+      liveMsg: '',
+      busy: false,
+      engineEmail: '',
+      engineState: 'loading',            // loading | ok | error
+      requestId: '',
+      copied: { email: false, id: false },
+      done: false,
+      idApp: '',
+      doneNama: ''
+    };
+  },
+
+  computed: {
+    engineText() {
+      if (this.engineState === 'error') return 'Email belum bisa dimuat';
+      return this.engineEmail || 'Memuat…';
+    }
+  },
+
+  created() {
+    this.requestId = readRequestId() || newRequestId();
+    writeRequestId(this.requestId);
+    // pesan galat sebuah kolom hilang begitu kolomnya diubah
+    FIELDS.forEach((n) => this.$watch('form.' + n, () => { this.errors[n] = ''; }));
+  },
+
+  mounted() {
+    this.loadInfo();
+    this.$refs.nama_kantor.focus();
+  },
+
+  methods: {
+    // ----- info engine (email yang harus diberi akses Editor) -----
+    async loadInfo() {
+      this.engineState = 'loading';
+      const r = await api({ action: 'info' }, 20000);
+      if (r && r.ok && r.engine_email) {
+        this.engineEmail = r.engine_email; this.engineState = 'ok';
+        if (r.registration_open === false) this.alertMsg = 'Pendaftaran admin baru sedang ditutup.';
+      } else {
+        this.engineState = 'error';
+        this.alertMsg = (r && r.message) || 'Gagal memuat data dari server.';
+      }
+    },
+    reloadInfo() { this.alertMsg = ''; this.loadInfo(); },
+
+    // ----- validasi -----
+    validate() {
+      let first = null;
+      FIELDS.forEach((n) => {
+        const msg = rules[n](this.form[n]);
+        this.errors[n] = msg;
+        if (msg && !first) first = n;
+      });
+      if (first) this.$refs[first].focus();
+      return !first;
+    },
+
+    // ----- kirim pendaftaran -----
+    async submit() {
+      this.alertMsg = '';
+      if (this.busy || !this.validate()) return;
+      this.busy = true;
+      const f = this.form;
+      const r = await api({
+        action: 'register', request_id: this.requestId,
+        nama_kantor: f.nama_kantor, admin_nama: f.admin_nama, admin_email: f.admin_email, password: f.password,
+        spreadsheet: f.spreadsheet.trim(), drive_folder: f.drive_folder.trim(), website: f.website
+      }, 90000);
+      this.busy = false;
+
+      if (r && r.ok) {                                   // berhasil
+        this.idApp = r.id_app;
+        this.doneNama = r.nama_kantor || 'Kantor Anda';
+        this.form.password = '';
+        this.requestId = newRequestId(); writeRequestId(this.requestId);
+        this.done = true;
+        this.$nextTick(() => { this.$refs.doneTitle.focus(); window.scrollTo({ top: 0 }); });
+        return;
+      }
+
+      const errs = Object.assign({}, r && r.errors);     // gagal: tampilkan di kolom yang bermasalah
+      if (r && r.code === 'AKSES_DITOLAK') {
+        if (r.spreadsheet && !r.spreadsheet.ok) errs.spreadsheet = r.spreadsheet.message;
+        if (r.folder && !r.folder.ok) errs.drive_folder = r.folder.message;
+        this.alertMsg = 'Akses ke Spreadsheet atau folder Drive belum benar. Pastikan keduanya sudah dibagikan sebagai Editor ke email di atas.';
+      } else {
+        this.alertMsg = (r && r.message) || 'Pendaftaran gagal. Coba lagi.';
+        if (r && r.errors && r.errors.request_id) { this.requestId = newRequestId(); writeRequestId(this.requestId); }
+      }
+      FIELDS.forEach((k) => { this.errors[k] = errs[k] || ''; });
+      const first = FIELDS.find((k) => errs[k]);
+      if (first) this.$refs[first].focus();
+    },
+
+    // ----- salin -----
+    async copyText(text) {
+      try { await navigator.clipboard.writeText(text); }
+      catch (e) {
+        const t = document.createElement('textarea'); t.value = text; t.style.position = 'fixed'; t.style.opacity = '0';
+        document.body.appendChild(t); t.select(); try { document.execCommand('copy'); } catch (x) { /* abaikan */ } t.remove();
+      }
+    },
+    async copyEmail() {
+      await this.copyText(this.engineEmail);
+      this.liveMsg = 'Email engine tersalin'; this.copied.email = true;
+      setTimeout(() => { this.copied.email = false; }, 1800);
+    },
+    async copyId() {
+      await this.copyText(this.idApp);
+      this.liveMsg = 'ID_APP tersalin'; this.copied.id = true;
+      setTimeout(() => { this.copied.id = false; }, 1800);
+    },
+
+    // ----- daftarkan kantor lain -----
+    again() {
+      FIELDS.forEach((n) => { this.form[n] = ''; this.errors[n] = ''; });
+      this.alertMsg = ''; this.done = false;
+      this.$nextTick(() => this.$refs.nama_kantor.focus());
+    }
+  }
+});
+</script>
+</body>
+</html>
