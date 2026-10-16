@@ -1,0 +1,752 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin Absensi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F2F5F4;--card:#fff;--line:#DDE5E2;--ink:#10211E;--mute:#4F5F5B;--faint:#8A9995;--brand:#0F766E;--brand-d:#0B5B54;--brand-l:#E1F2EF;--ok:#1B5E34;--ok-l:#E6F4EA;--warn:#8A4B00;--warn-l:#FDEDD3;--bad:#A12B22;--bad-l:#FCE8E6;--c1:#0D9488;--c2:#C2410C;color-scheme:light}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:15px;-webkit-text-size-adjust:100%}
+[v-cloak]{display:none}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+h1{margin:0;font-size:26px;font-weight:800;letter-spacing:-.02em}
+h2{margin:0;font-size:16px;font-weight:700}
+.lead{margin:4px 0 0;color:var(--mute);font-size:14px}
+
+/* tombol & form */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border:0;border-radius:12px;background:var(--brand);color:#fff;font-weight:700;cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--brand-d)}
+.btn.sec{background:#fff;color:var(--brand-d);border:1px solid #9AA9A5}
+.btn.sec:hover{background:var(--brand-l)}
+.btn.danger{background:#fff;color:var(--bad);border:1px solid #D9A39E}
+.btn.danger:hover{background:var(--bad-l)}
+.btn.sm{min-height:36px;padding:0 12px;font-size:13.5px;border-radius:10px}
+.btn[disabled]{background:#CBD7D3;color:#2F3F3B;border-color:transparent;cursor:not-allowed}
+.link{background:none;border:0;color:var(--brand-d);font-weight:700;cursor:pointer;padding:8px 4px;min-height:36px}
+label,.lbl{display:block;font-size:13.5px;font-weight:700;margin:0 0 6px}
+.inp{width:100%;height:44px;padding:0 12px;border:1px solid #9AA9A5;border-radius:10px;background:#fff}
+textarea.inp{height:auto;padding:10px 12px;min-height:84px}
+.inp.bad{border-color:var(--bad);box-shadow:0 0 0 1px var(--bad)}
+.err{margin:6px 0 0;font-size:13px;font-weight:600;color:var(--bad)}.err:empty{display:none}
+.hint{margin:6px 0 0;font-size:12.5px;color:var(--mute)}
+.field{margin-bottom:16px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.banner{padding:12px 14px;border-radius:12px;font-size:14px;font-weight:600;line-height:1.45;margin:0 0 16px}
+.banner.warn{background:var(--warn-l);color:var(--warn)}
+.banner.bad{background:var(--bad-l);color:var(--bad)}
+.banner.ok{background:var(--ok-l);color:var(--ok)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px}
+.card + .card{margin-top:16px}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;white-space:nowrap}
+.tag.ok{background:var(--ok-l);color:var(--ok)}.tag.late{background:var(--warn-l);color:var(--warn)}.tag.run{background:var(--brand-l);color:var(--brand-d)}.tag.na{background:#E4EAE8;color:#2F3F3B}.tag.bad{background:var(--bad-l);color:var(--bad)}
+
+/* login */
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px}
+.login .box{width:100%;max-width:400px}
+.brand{display:flex;align-items:center;gap:12px;font-weight:800;font-size:18px}
+.logo{width:40px;height:40px;border-radius:12px;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* kerangka */
+.shell{display:flex;min-height:100vh}
+.side{width:248px;flex-shrink:0;background:#fff;border-right:1px solid var(--line);padding:22px 14px;display:flex;flex-direction:column;gap:22px;position:sticky;top:0;height:100vh}
+.side .org{font-size:13px;color:var(--mute);font-weight:500}
+.nav{display:flex;flex-direction:column;gap:4px}
+.nav button{display:flex;align-items:center;gap:12px;height:44px;padding:0 12px;border:0;border-radius:12px;background:none;font-weight:600;cursor:pointer;color:var(--ink);text-align:left}
+.nav button:hover{background:#F2F5F4}
+.nav button[aria-current=page]{background:var(--brand-l);color:var(--brand-d);font-weight:700}
+.side .foot{margin-top:auto;border-top:1px solid var(--line);padding-top:14px;font-size:13px;color:var(--mute)}
+.side .foot b{display:block;color:var(--ink);font-size:14px}
+.idapp{display:flex;align-items:center;gap:8px;background:var(--brand-l);border-radius:12px;padding:8px 10px;font-size:12.5px;color:var(--brand-d);font-weight:700}
+.idapp code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;letter-spacing:.04em}
+.idapp button{margin-left:auto;border:0;background:#fff;border-radius:8px;min-height:30px;padding:0 10px;font-weight:700;cursor:pointer;color:var(--brand-d)}
+.main{flex:1;min-width:0;padding:28px 32px 48px;max-width:1280px}
+.page-h{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+.tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+
+/* kartu angka */
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.kpi .n{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi .l{font-size:13px;font-weight:700;color:var(--mute);margin-top:4px}
+.kpi .s{font-size:12px;color:var(--faint);font-weight:600;margin-top:2px}
+.grid2{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:16px;align-items:start}
+.grid2 .card + .card{margin-top:0}
+
+/* tabel */
+.tw{overflow:auto;border:1px solid var(--line);border-radius:14px}
+table{width:100%;border-collapse:collapse;font-size:14px;background:#fff}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:12.5px;font-weight:700;color:var(--mute);background:#F8FAF9;position:sticky;top:0}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:#FAFCFB}
+.empty{padding:28px 16px;text-align:center;color:var(--mute);font-size:14px}
+.plist{list-style:none;margin:0;padding:0}
+.plist li{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.plist li:first-child{border-top:0}
+.plist b{font-weight:700}.plist small{display:block;color:var(--mute);font-size:12.5px}
+.plist .r{margin-left:auto}
+
+/* grafik */
+.chartbox{position:relative}
+.chartbox svg{width:100%;height:auto;display:block;overflow:visible}
+.chartbox text{font-family:inherit;font-size:11px;fill:var(--mute)}
+@media (max-width:640px){.chartbox text{font-size:19px}}
+.chartbox .bar:focus{outline:none}
+.chartbox .bar:focus-visible .hit,.chartbox .bar:hover .hit{fill:rgba(15,118,110,.08)}
+.legend{display:flex;gap:16px;font-size:13px;font-weight:600;color:var(--mute);flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.tip{position:absolute;pointer-events:none;background:#10211E;color:#fff;border-radius:10px;padding:8px 10px;font-size:12.5px;line-height:1.5;transform:translate(-50%,-100%);white-space:nowrap;z-index:3;margin-top:-6px}
+.tip b{display:block}
+
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(16,33,30,.55);z-index:20;display:flex;align-items:center;justify-content:center;padding:16px}
+.sheet{width:100%;max-width:560px;max-height:92vh;overflow:auto;background:var(--bg);border-radius:20px;padding:20px 22px 22px}
+.sheet.wide{max-width:760px}
+.sheet-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.sheet-h h2{font-size:19px;font-weight:800}
+.xbtn{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.acts{display:flex;gap:10px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap}
+.photos{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+figure.ph{margin:0}
+figure.ph figcaption{display:flex;justify-content:space-between;font-weight:700;font-size:14px;margin-bottom:8px}
+figure.ph figcaption span{color:var(--mute);font-variant-numeric:tabular-nums}
+.phbox{background:#E4EAE8;border-radius:14px;overflow:hidden;min-height:160px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--mute);font-size:14px;font-weight:600;padding:10px}
+.phbox img{display:block;width:100%;height:auto}
+.checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;max-height:210px;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:8px;background:#fff}
+.chk{display:flex;align-items:center;gap:10px;min-height:38px;padding:0 8px;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;margin:0}
+.chk:hover{background:#F2F5F4}
+.chk input{width:18px;height:18px;accent-color:var(--brand);flex-shrink:0}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px 6px 4px 12px;font-size:13px;font-weight:600}
+.chip button{border:0;background:#F2F5F4;width:26px;height:26px;border-radius:50%;cursor:pointer;font-weight:700}
+.days{display:flex;flex-wrap:wrap;gap:8px}
+.days .chk{background:#fff;border:1px solid var(--line);padding:0 12px 0 10px}
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);max-width:420px;width:calc(100% - 32px);padding:13px 16px;border-radius:14px;font-size:14px;font-weight:600;z-index:40;box-shadow:0 8px 24px rgba(16,33,30,.18)}
+.toast.ok{background:var(--ok);color:#fff}.toast.bad{background:var(--bad);color:#fff}
+.spin{width:18px;height:18px;border:3px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.print-head{display:none}
+
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.grid2{grid-template-columns:1fr}}
+@media (max-width:900px){
+  .shell{display:block}
+  .side{position:static;width:auto;height:auto;flex-direction:column;gap:12px;padding:14px 16px;border-right:0;border-bottom:1px solid var(--line)}
+  .nav{flex-direction:row;overflow-x:auto;gap:6px;padding-bottom:2px}
+  .nav button{flex-shrink:0;padding:0 14px}
+  .side .foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:0;padding-top:10px}
+  .main{padding:20px 16px 40px}
+}
+@media (max-width:560px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.row2,.row3,.photos{grid-template-columns:1fr}h1{font-size:22px}}
+@media print{
+  @page{size:A4 landscape;margin:12mm}
+  body{background:#fff;font-size:11px}
+  .side,.noprint,.toast,.modal{display:none !important}
+  .main{padding:0;max-width:none}
+  .card{border:0;padding:0}
+  .tw{border:0;overflow:visible}
+  table{font-size:10.5px}th,td{padding:4px 6px}
+  th{position:static;background:#eee !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .print-head{display:block;margin-bottom:10px}
+  .print-head h1{font-size:18px}
+  .kpis{grid-template-columns:repeat(6,1fr);gap:6px}.kpi{padding:6px 8px}.kpi .n{font-size:16px}
+  .pb{page-break-before:always}
+  tr{page-break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div id="app" v-cloak>
+
+<!-- ============ LOGIN ============ -->
+<div v-if="!session" class="login">
+  <div class="box">
+    <div class="brand" style="margin-bottom:24px"><span class="logo"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>Absensi · Admin</div>
+    <h1>Masuk sebagai admin</h1>
+    <p class="lead" style="margin-bottom:20px">Gunakan email dan password yang Anda daftarkan saat mendaftarkan kantor.</p>
+    <div v-if="!configured" class="banner warn">Alamat web app masterAbsen belum diisi (<code>MASTER_URL</code> di bagian atas script).</div>
+    <form class="card" @submit.prevent="login" novalidate>
+      <div v-if="loginMsg" class="banner bad" role="alert">{{ loginMsg }}</div>
+      <div class="field"><label for="email">Email</label><input id="email" ref="email" class="inp" :class="{bad: loginErr.email}" type="email" v-model.trim="lf.email" autocomplete="username" inputmode="email"><p class="err">{{ loginErr.email }}</p></div>
+      <div class="field"><label for="password">Password</label><input id="password" class="inp" :class="{bad: loginErr.password}" type="password" v-model="lf.password" autocomplete="current-password"><p class="err">{{ loginErr.password }}</p></div>
+      <button id="loginBtn" class="btn" style="width:100%" type="submit" :disabled="busy"><span v-if="busy" class="spin" aria-hidden="true"></span>{{ busy ? 'Memeriksa…' : 'Masuk' }}</button>
+    </form>
+  </div>
+</div>
+
+<!-- ============ KERANGKA ============ -->
+<div v-else class="shell">
+  <aside class="side">
+    <div class="brand"><span class="logo"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><div>Absensi<div class="org">{{ session.nama_kantor }}</div></div></div>
+    <div class="idapp"><span>ID_APP</span><code id="idappTxt">{{ session.id_app }}</code><button id="copyId" type="button" @click="copyId">{{ copied ? 'Tersalin' : 'Salin' }}</button></div>
+    <nav class="nav" aria-label="Menu admin">
+      <button v-for="m in menu" :key="m.id" :id="'nav-' + m.id" type="button" :aria-current="view === m.id ? 'page' : null" @click="go(m.id)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" v-html="m.icon"></svg>{{ m.label }}
+      </button>
+    </nav>
+    <div class="foot"><div><b>{{ session.nama }}</b>{{ session.email }}</div><button id="logout" class="btn sec sm" type="button" @click="logout">Keluar</button></div>
+  </aside>
+
+  <main class="main">
+    <div v-if="lokasiBelum && view !== 'pengaturan'" id="bannerLokasi" class="banner warn noprint" role="status">
+      Lokasi kantor belum diatur, jadi pegawai belum bisa absen (kecuali yang punya Surat Tugas). <button class="link" type="button" @click="go('pengaturan')">Atur sekarang</button>
+    </div>
+
+    <!-- ===== DASHBOARD ===== -->
+    <section v-show="view === 'dashboard'" aria-labelledby="h-dash">
+      <div class="page-h">
+        <div><h1 id="h-dash">Dashboard</h1><p class="lead">{{ dash ? fmtTgl(dash.tanggal) : 'Memuat…' }}<span v-if="dash && !dash.hari_kerja"> · bukan hari kerja</span></p></div>
+        <div class="tools noprint">
+          <label class="sr" for="dashDate">Tanggal</label>
+          <input id="dashDate" class="inp" style="width:auto" type="date" v-model="dashDate" :max="dash ? dash.hari_ini : null" @change="loadDash">
+          <button id="dashToday" class="btn sec" type="button" @click="dashDate = ''; loadDash()">Hari ini</button>
+          <button id="dashRefresh" class="btn sec" type="button" @click="loadDash" :disabled="dashBusy">Muat ulang</button>
+        </div>
+      </div>
+      <div v-if="dashErr" class="banner bad" role="alert">{{ dashErr }}</div>
+      <template v-if="dash">
+        <div class="kpis" id="kpis">
+          <div class="kpi"><div class="n" id="k-aktif">{{ dash.ringkas.pegawai_aktif }}</div><div class="l">Pegawai aktif</div></div>
+          <div class="kpi"><div class="n" id="k-hadir">{{ dash.ringkas.hadir }}</div><div class="l">Hadir</div><div class="s">{{ persen }}% dari pegawai aktif</div></div>
+          <div class="kpi"><div class="n" id="k-telat">{{ dash.ringkas.terlambat }}</div><div class="l">Terlambat</div></div>
+          <div class="kpi"><div class="n" id="k-belum">{{ dash.ringkas.belum_absen }}</div><div class="l">Belum absen</div></div>
+          <div class="kpi"><div class="n" id="k-dinas">{{ dash.ringkas.dinas_luar }}</div><div class="l">Dinas luar</div><div class="s">{{ dash.ringkas.st_berlaku }} ST berlaku</div></div>
+          <div class="kpi"><div class="n" id="k-lembur">{{ dash.ringkas.lembur }}</div><div class="l">Lembur</div></div>
+        </div>
+
+        <div class="grid2">
+          <div class="card">
+            <div class="card-h"><h2 id="h-tren">Kehadiran 14 hari terakhir</h2>
+              <div class="tools"><div class="legend" aria-hidden="false"><span><i style="background:var(--c1)"></i>Tepat waktu</span><span><i style="background:var(--c2)"></i>Terlambat</span></div>
+              <button id="trenToggle" class="btn sec sm noprint" type="button" @click="trenTabel = !trenTabel">{{ trenTabel ? 'Lihat grafik' : 'Lihat tabel' }}</button></div></div>
+            <div v-if="!trenTabel" class="chartbox" @mouseleave="tip = null">
+              <svg :view-box.camel="'0 0 ' + chart.W + ' ' + chart.H" role="img" aria-labelledby="h-tren">
+                <g v-for="t in chart.ticks" :key="'t' + t.v"><line :x1="chart.L" :x2="chart.W" :y1="t.y" :y2="t.y" stroke="#E3EAE8" stroke-width="1"/><text :x="chart.L - 6" :y="t.y + 4" text-anchor="end">{{ t.v }}</text></g>
+                <g v-for="b in chart.bars" :key="b.tanggal" class="bar" tabindex="0" role="img" :aria-label="b.aria" @mouseenter="showTip(b)" @focus="showTip(b)" @blur="tip = null">
+                  <rect class="hit" :x="b.slotX" :y="chart.T" :width="b.slotW" :height="chart.base - chart.T" fill="transparent"/>
+                  <path v-if="b.hTepat > 0" :d="b.pTepat" fill="var(--c1)"/>
+                  <path v-if="b.hTelat > 0" :d="b.pTelat" fill="var(--c2)"/>
+                  <line v-if="b.hTepat + b.hTelat === 0" :x1="b.x" :x2="b.x + b.w" :y1="chart.base - 1" :y2="chart.base - 1" stroke="#C9D5D1" stroke-width="2" stroke-linecap="round"/>
+                  <text :x="b.x + b.w / 2" :y="chart.base + 16" text-anchor="middle" :style="b.workday ? '' : 'fill:#8A9995'">{{ b.hari }}</text>
+                  <text :x="b.x + b.w / 2" :y="chart.base + 29" text-anchor="middle" :style="b.workday ? 'font-weight:700' : 'fill:#8A9995'">{{ b.tgl }}</text>
+                </g>
+                <line :x1="chart.L" :x2="chart.W" :y1="chart.base" :y2="chart.base" stroke="#9AA9A5" stroke-width="1"/>
+              </svg>
+              <div v-if="tip" class="tip" :style="{left: tip.left, top: tip.top}"><b>{{ fmtTgl(tip.b.tanggal) }}</b>Tepat waktu: {{ tip.b.hadir - tip.b.terlambat }}<br>Terlambat: {{ tip.b.terlambat }}<span v-if="!tip.b.workday"><br>Bukan hari kerja</span></div>
+            </div>
+            <div v-else class="tw"><table id="trenTabelEl"><caption class="sr">Kehadiran 14 hari terakhir</caption><thead><tr><th scope="col">Tanggal</th><th scope="col" class="num">Tepat waktu</th><th scope="col" class="num">Terlambat</th><th scope="col" class="num">Total hadir</th></tr></thead>
+              <tbody><tr v-for="t in dash.tren" :key="t.tanggal"><td>{{ fmtTgl(t.tanggal) }}<span v-if="!t.hari_kerja" style="color:var(--faint)"> (libur)</span></td><td class="num">{{ t.hadir - t.terlambat }}</td><td class="num">{{ t.terlambat }}</td><td class="num">{{ t.hadir }}</td></tr></tbody></table></div>
+          </div>
+
+          <div class="card">
+            <div class="card-h"><h2>Belum absen ({{ dash.belum_absen.length }})</h2></div>
+            <div v-if="!dash.belum_absen.length" class="empty" id="belumKosong">Semua pegawai aktif sudah absen.</div>
+            <ul v-else id="belumList" class="plist" style="max-height:260px;overflow:auto">
+              <li v-for="p in dash.belum_absen" :key="p.pegawai_id"><div><b>{{ p.nama }}</b><small>{{ p.jabatan || p.pegawai_id }}</small></div><span v-if="p.dinas" class="tag run r">ST berlaku</span></li>
+            </ul>
+            <h2 style="margin:18px 0 6px">Paling sering terlambat · 30 hari</h2>
+            <div v-if="!dash.top_terlambat.length" class="empty" style="padding:12px 0;text-align:left">Tidak ada keterlambatan.</div>
+            <ul v-else class="plist"><li v-for="p in dash.top_terlambat" :key="p.pegawai_id"><b>{{ p.nama }}</b><span class="tag late r">{{ p.kali }}×</span></li></ul>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-h"><h2>Kehadiran {{ fmtTgl(dash.tanggal) }}</h2></div>
+          <div v-if="!dash.kehadiran.length" class="empty" id="hadirKosong">Belum ada yang absen pada tanggal ini.</div>
+          <div v-else class="tw"><table id="hadirTabel"><caption class="sr">Kehadiran pada tanggal terpilih</caption>
+            <thead><tr><th scope="col">Nama</th><th scope="col">Masuk</th><th scope="col">Pulang</th><th scope="col">Status</th><th scope="col">Keterangan</th><th scope="col" class="num">Lembur</th><th scope="col" class="noprint">Foto</th></tr></thead>
+            <tbody><tr v-for="r in dash.kehadiran" :key="r.pegawai_id">
+              <td><b>{{ r.nama }}</b><div style="font-size:12.5px;color:var(--mute)">{{ r.jabatan }}</div></td><td>{{ fmt(r.jam_masuk) }}</td><td>{{ fmt(r.jam_pulang) }}</td>
+              <td><span class="tag" :class="r.status === 'TERLAMBAT' ? 'late' : 'ok'">{{ r.status === 'TERLAMBAT' ? 'Terlambat' : 'Tepat waktu' }}</span></td>
+              <td>{{ r.keterangan || '–' }}</td><td class="num">{{ r.lembur_menit ? fmtMenit(r.lembur_menit) : '–' }}</td>
+              <td class="noprint"><button class="btn sec sm" type="button" @click="openFoto({tanggal: dash.tanggal, pegawai_id: r.pegawai_id, nama: r.nama, jam_masuk: r.jam_masuk, jam_pulang: r.jam_pulang, foto_masuk: r.foto_masuk, foto_pulang: r.foto_pulang}, $event)">Lihat foto</button></td>
+            </tr></tbody></table></div>
+        </div>
+      </template>
+      <div v-else-if="dashBusy" class="empty">Memuat dashboard…</div>
+    </section>
+
+    <!-- ===== LAPORAN ===== -->
+    <section v-show="view === 'laporan'" aria-labelledby="h-lap">
+      <div class="page-h noprint"><div><h1 id="h-lap">Laporan</h1><p class="lead">Rekap kehadiran per pegawai dan rincian harian, siap cetak atau diunduh.</p></div></div>
+      <div class="card noprint">
+        <div class="row3" style="align-items:end">
+          <div class="field" style="margin:0"><label for="lapDari">Dari tanggal</label><input id="lapDari" class="inp" type="date" v-model="lf2.dari"></div>
+          <div class="field" style="margin:0"><label for="lapSampai">Sampai tanggal</label><input id="lapSampai" class="inp" type="date" v-model="lf2.sampai"></div>
+          <div class="field" style="margin:0"><label for="lapPeg">Pegawai</label><select id="lapPeg" class="inp" v-model="lf2.pegawai_id"><option value="">Semua pegawai</option><option v-for="p in pegawai" :key="p.pegawai_id" :value="p.pegawai_id">{{ p.nama }}</option></select></div>
+        </div>
+        <div class="tools" style="margin-top:14px">
+          <button id="lapShow" class="btn" type="button" @click="loadLaporan" :disabled="lapBusy"><span v-if="lapBusy" class="spin" aria-hidden="true"></span>{{ lapBusy ? 'Memuat…' : 'Tampilkan laporan' }}</button>
+          <button class="btn sec" type="button" @click="preset('bulan')">Bulan ini</button>
+          <button class="btn sec" type="button" @click="preset('lalu')">Bulan lalu</button>
+          <button class="btn sec" type="button" @click="preset('minggu')">7 hari terakhir</button>
+        </div>
+        <p v-if="lapErr" class="err" role="alert" id="lapErr">{{ lapErr }}</p>
+      </div>
+
+      <template v-if="lap">
+        <div class="card" id="lapOut">
+          <div class="print-head"><h1>Laporan Kehadiran</h1><div>{{ session.nama_kantor }} · Periode {{ fmtTgl(lap.dari) }} s/d {{ fmtTgl(lap.sampai) }}<span v-if="lapPegNama"> · {{ lapPegNama }}</span></div><div>Dicetak {{ dicetak }} · Jam masuk standar {{ lap.jam_masuk_standar }}, jam pulang {{ lap.jam_pulang_standar }}</div></div>
+          <div class="card-h noprint">
+            <div><h2>{{ fmtTgl(lap.dari) }} – {{ fmtTgl(lap.sampai) }}</h2><p class="lead">{{ lap.hari_kerja_periode }} hari kerja sampai hari ini · jam masuk {{ lap.jam_masuk_standar }}, pulang {{ lap.jam_pulang_standar }}</p></div>
+            <div class="tools"><button id="lapPrint" class="btn sec" type="button" @click="cetak">Cetak / simpan PDF</button><button id="lapCsvRekap" class="btn sec" type="button" @click="csv('rekap')">Unduh rekap (CSV)</button><button id="lapCsvDetail" class="btn sec" type="button" @click="csv('detail')">Unduh rincian (CSV)</button></div>
+          </div>
+          <div class="kpis" style="margin-bottom:18px">
+            <div class="kpi"><div class="n">{{ lap.total.pegawai }}</div><div class="l">Pegawai</div></div>
+            <div class="kpi"><div class="n">{{ lap.total.hadir }}</div><div class="l">Total kehadiran</div></div>
+            <div class="kpi"><div class="n">{{ lap.total.terlambat }}</div><div class="l">Terlambat</div></div>
+            <div class="kpi"><div class="n">{{ lap.total.alpa }}</div><div class="l">Tanpa keterangan</div></div>
+            <div class="kpi"><div class="n">{{ lap.total.dinas_luar }}</div><div class="l">Dinas luar</div></div>
+            <div class="kpi"><div class="n">{{ fmtMenit(lap.total.lembur_menit) }}</div><div class="l">Total lembur</div></div>
+          </div>
+
+          <h2 style="margin-bottom:10px">Rekap per pegawai</h2>
+          <div v-if="!lap.rekap.length" class="empty">Tidak ada pegawai pada laporan ini.</div>
+          <div v-else class="tw"><table id="rekapTabel"><caption class="sr">Rekap kehadiran per pegawai</caption>
+            <thead><tr><th scope="col">Nama</th><th scope="col">Jabatan</th><th scope="col" class="num">Hari kerja</th><th scope="col" class="num">Hadir</th><th scope="col" class="num">Tepat</th><th scope="col" class="num">Terlambat</th><th scope="col" class="num">Tanpa ket.</th><th scope="col" class="num">Dinas luar</th><th scope="col" class="num">ST tanpa absen</th><th scope="col" class="num">Tanpa pulang</th><th scope="col" class="num">Total jam</th><th scope="col" class="num">Lembur</th><th scope="col" class="num">Rata² masuk</th></tr></thead>
+            <tbody><tr v-for="r in lap.rekap" :key="r.pegawai_id"><td><b>{{ r.nama }}</b></td><td>{{ r.jabatan || '–' }}</td><td class="num">{{ r.hari_kerja }}</td><td class="num">{{ r.hadir }}</td><td class="num">{{ r.tepat }}</td><td class="num">{{ r.terlambat }}</td><td class="num">{{ r.alpa }}</td><td class="num">{{ r.dinas_luar }}</td><td class="num">{{ r.dinas_tanpa_absen }}</td><td class="num">{{ r.tanpa_pulang }}</td><td class="num">{{ fmtMenit(r.total_menit) }}</td><td class="num">{{ fmtMenit(r.lembur_menit) }}</td><td class="num">{{ fmt(r.rata_jam_masuk) }}</td></tr></tbody></table></div>
+          <p class="hint">“Tanpa ket.” = hari kerja tanpa absen dan tanpa Surat Tugas, tidak termasuk hari libur dan hari sebelum pegawai terdaftar. Lembur dihitung dari jam pulang terakhir dikurangi jam pulang standar.</p>
+
+          <h2 class="pb" style="margin:22px 0 10px">Rincian harian</h2>
+          <div v-if="!lap.detail.length" class="empty" id="detailKosong">Tidak ada data absensi pada rentang ini.</div>
+          <div v-else class="tw"><table id="detailTabel"><caption class="sr">Rincian absensi harian</caption>
+            <thead><tr><th scope="col">Tanggal</th><th scope="col">Nama</th><th scope="col">Masuk</th><th scope="col">Pulang</th><th scope="col" class="num">Durasi</th><th scope="col" class="num">Lembur</th><th scope="col">Status</th><th scope="col">Keterangan</th><th scope="col" class="noprint">Foto</th></tr></thead>
+            <tbody><tr v-for="r in lap.detail" :key="r.tanggal + r.pegawai_id"><td>{{ fmtTgl(r.tanggal) }}</td><td>{{ r.nama }}</td><td>{{ fmt(r.jam_masuk) }}</td><td>{{ fmt(r.jam_pulang) }}</td><td class="num">{{ r.durasi_menit === null || r.durasi_menit === undefined ? '–' : fmtMenit(r.durasi_menit) }}</td><td class="num">{{ r.lembur_menit ? fmtMenit(r.lembur_menit) : '–' }}</td><td><span class="tag" :class="!r.jam_masuk ? 'na' : (r.status === 'TERLAMBAT' ? 'late' : 'ok')">{{ !r.jam_masuk ? 'Tidak hadir' : (r.status === 'TERLAMBAT' ? 'Terlambat' : 'Tepat waktu') }}</span></td><td>{{ r.keterangan || '–' }}</td><td class="noprint"><button class="btn sec sm" type="button" @click="openFoto(r, $event)">Foto</button></td></tr></tbody></table></div>
+        </div>
+      </template>
+    </section>
+
+    <!-- ===== PEGAWAI ===== -->
+    <section v-show="view === 'pegawai'" aria-labelledby="h-peg">
+      <div class="page-h"><div><h1 id="h-peg">Pegawai</h1><p class="lead">Pegawai login di halaman absen dengan email dan PIN yang Anda isi di sini.</p></div><button id="pegAdd" class="btn" type="button" @click="openPeg(null, $event)">+ Tambah pegawai</button></div>
+      <div v-if="pegErr" class="banner bad" role="alert">{{ pegErr }}</div>
+      <div class="card">
+        <div v-if="pegBusy && !pegawai.length" class="empty">Memuat pegawai…</div>
+        <div v-else-if="!pegawai.length" class="empty" id="pegKosong">Belum ada pegawai. Tambahkan pegawai pertama Anda.</div>
+        <div v-else class="tw"><table id="pegTabel"><caption class="sr">Daftar pegawai</caption>
+          <thead><tr><th scope="col">ID</th><th scope="col">Nama</th><th scope="col">Email</th><th scope="col">Jabatan</th><th scope="col">Status</th><th scope="col">PIN</th><th scope="col"><span class="sr">Aksi</span></th></tr></thead>
+          <tbody><tr v-for="p in pegawai" :key="p.pegawai_id"><td>{{ p.pegawai_id }}</td><td><b>{{ p.nama }}</b></td><td>{{ p.email }}</td><td>{{ p.jabatan || '–' }}</td>
+            <td><span class="tag" :class="p.status === 'AKTIF' ? 'ok' : 'na'">{{ p.status === 'AKTIF' ? 'Aktif' : 'Nonaktif' }}</span></td>
+            <td><span class="tag" :class="p.pin === 'TERPASANG' ? 'ok' : (p.pin === 'MENUNGGU_LOGIN' ? 'run' : 'bad')">{{ ({TERPASANG: 'Terpasang', MENUNGGU_LOGIN: 'Menunggu login pertama', BELUM_ADA: 'Belum ada'})[p.pin] }}</span></td>
+            <td><button class="btn sec sm" type="button" @click="openPeg(p, $event)">Ubah</button></td></tr></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- ===== SURAT TUGAS ===== -->
+    <section v-show="view === 'st'" aria-labelledby="h-st">
+      <div class="page-h"><div><h1 id="h-st">Surat Tugas</h1><p class="lead">Pegawai dengan Surat Tugas yang berlaku boleh absen di luar radius kantor pada tanggal penugasan.</p></div><button id="stAdd" class="btn" type="button" @click="openST($event)">+ Buat Surat Tugas</button></div>
+      <div v-if="stErr" class="banner bad" role="alert">{{ stErr }}</div>
+      <div class="card">
+        <div v-if="stBusy && !st.length" class="empty">Memuat Surat Tugas…</div>
+        <div v-else-if="!st.length" class="empty" id="stKosong">Belum ada Surat Tugas.</div>
+        <div v-else class="tw"><table id="stTabel"><caption class="sr">Daftar Surat Tugas</caption>
+          <thead><tr><th scope="col">Nomor</th><th scope="col">Pegawai</th><th scope="col">Tujuan</th><th scope="col">Periode</th><th scope="col">Status</th><th scope="col"><span class="sr">Aksi</span></th></tr></thead>
+          <tbody><tr v-for="r in st" :key="r.st_id"><td>{{ r.nomor }}</td><td><b>{{ r.nama }}</b></td><td style="white-space:normal;min-width:180px">{{ r.tujuan }}</td><td>{{ r.tanggal_mulai === r.tanggal_selesai ? fmtTgl(r.tanggal_mulai) : fmtTgl(r.tanggal_mulai) + ' – ' + fmtTgl(r.tanggal_selesai) }}</td>
+            <td><span class="tag" :class="({BERLAKU: 'ok', AKAN_DATANG: 'run', SELESAI: 'na', BATAL: 'bad'})[r.status]">{{ ({BERLAKU: 'Berlaku', AKAN_DATANG: 'Akan datang', SELESAI: 'Selesai', BATAL: 'Dibatalkan'})[r.status] }}</span></td>
+            <td><button v-if="r.status !== 'BATAL' && r.status !== 'SELESAI'" class="btn danger sm" type="button" @click="stStatus(r, 'BATAL')">Batalkan</button><button v-else-if="r.status === 'BATAL'" class="btn sec sm" type="button" @click="stStatus(r, 'AKTIF')">Aktifkan lagi</button></td></tr></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- ===== PENGATURAN ===== -->
+    <section v-show="view === 'pengaturan'" aria-labelledby="h-set">
+      <div class="page-h"><div><h1 id="h-set">Pengaturan</h1><p class="lead">Berlaku untuk seluruh pegawai kantor ini.</p></div></div>
+      <div v-if="setMsg" class="banner" :class="setMsgKind" role="status" id="setMsg">{{ setMsg }}</div>
+      <form v-if="sf" @submit.prevent="saveSettings" novalidate>
+        <div v-if="lokasiBelum" class="banner warn">Lokasi kantor belum diisi. Selama kosong, pegawai tidak bisa absen kecuali memiliki Surat Tugas.</div>
+        <div class="card">
+          <div class="card-h"><h2>Jam kerja</h2></div>
+          <div class="row3">
+            <div class="field"><label for="s-jm">Jam masuk</label><input id="s-jm" class="inp" :class="{bad: setErr.jam_masuk}" type="time" v-model="sf.jam_masuk"><p class="err">{{ setErr.jam_masuk }}</p></div>
+            <div class="field"><label for="s-jp">Jam pulang</label><input id="s-jp" class="inp" :class="{bad: setErr.jam_pulang}" type="time" v-model="sf.jam_pulang"><p class="err">{{ setErr.jam_pulang }}</p></div>
+            <div class="field"><label for="s-tol">Toleransi (menit)</label><input id="s-tol" class="inp" :class="{bad: setErr.toleransi_menit}" type="number" min="0" max="240" v-model="sf.toleransi_menit"><p class="err">{{ setErr.toleransi_menit }}</p></div>
+          </div>
+          <p class="hint" style="margin-top:-6px">Terlambat bila absen masuk lewat jam masuk + toleransi. Lembur dihitung dari jam pulang terakhir setelah jam pulang.</p>
+          <div class="field" style="margin-top:14px"><span class="lbl">Hari kerja</span>
+            <div class="days"><label v-for="d in hariList" :key="d.v" class="chk"><input type="checkbox" :value="d.v" v-model="sf.hari_kerja"> {{ d.l }}</label></div><p class="err">{{ setErr.hari_kerja }}</p></div>
+          <div class="field"><span class="lbl">Hari libur (tanggal merah, cuti bersama)</span>
+            <div class="tools"><label class="sr" for="s-libur">Tambah tanggal libur</label><input id="s-libur" class="inp" style="width:auto" type="date" v-model="liburBaru"><button id="liburAdd" class="btn sec" type="button" @click="addLibur" :disabled="!liburBaru">Tambah</button></div>
+            <div class="chips"><span v-for="d in sf.hari_libur" :key="d" class="chip">{{ fmtTgl(d) }}<button type="button" :aria-label="'Hapus ' + d" @click="delLibur(d)">×</button></span><span v-if="!sf.hari_libur.length" class="hint">Belum ada hari libur.</span></div><p class="err">{{ setErr.hari_libur }}</p></div>
+          <div class="field" style="margin:0"><label for="s-zona">Zona waktu</label><select id="s-zona" class="inp" style="max-width:260px" v-model="sf.zona_waktu"><option value="Asia/Jakarta">WIB (Asia/Jakarta)</option><option value="Asia/Makassar">WITA (Asia/Makassar)</option><option value="Asia/Jayapura">WIT (Asia/Jayapura)</option></select></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><h2>Lokasi dan radius absen</h2></div>
+          <label class="chk" style="padding-left:0"><input id="s-wajib" type="checkbox" v-model="sf.wajib_radius"> Pegawai hanya bisa absen di dalam radius kantor</label>
+          <p class="hint" v-if="sf.wajib_radius">Di luar radius, absen ditolak kecuali pegawai memiliki Surat Tugas yang berlaku.</p>
+          <p class="hint" v-else style="color:var(--bad);font-weight:700">Dinonaktifkan: pegawai bisa absen dari mana saja. Tidak disarankan.</p>
+          <div class="row2" style="margin-top:14px">
+            <div class="field"><label for="s-lat">Latitude kantor</label><input id="s-lat" class="inp" :class="{bad: setErr.lat_kantor}" inputmode="decimal" v-model.trim="sf.lat_kantor" placeholder="-7.250445"><p class="err">{{ setErr.lat_kantor }}</p></div>
+            <div class="field"><label for="s-lng">Longitude kantor</label><input id="s-lng" class="inp" :class="{bad: setErr.lng_kantor}" inputmode="decimal" v-model.trim="sf.lng_kantor" placeholder="112.768845"><p class="err">{{ setErr.lng_kantor }}</p></div>
+          </div>
+          <div class="tools" style="margin:-4px 0 14px"><button id="pakaiLokasi" class="btn sec" type="button" @click="pakaiLokasi" :disabled="geoBusy">{{ geoBusy ? 'Mencari lokasi…' : 'Gunakan lokasi saya sekarang' }}</button><span class="hint" id="geoMsg" style="margin:0">{{ geoMsg }}</span></div>
+          <div class="row2">
+            <div class="field" style="margin:0"><label for="s-rad">Radius (meter)</label><input id="s-rad" class="inp" :class="{bad: setErr.radius_m}" type="number" min="10" max="5000" v-model="sf.radius_m"><p class="err">{{ setErr.radius_m }}</p></div>
+            <div class="field" style="margin:0"><label for="s-akr">Batas akurasi GPS (meter)</label><input id="s-akr" class="inp" :class="{bad: setErr.max_akurasi_m}" type="number" min="10" max="1000" v-model="sf.max_akurasi_m"><p class="err">{{ setErr.max_akurasi_m }}</p></div>
+          </div>
+        </div>
+        <div class="acts" style="margin-top:16px"><button id="setSave" class="btn" type="submit" :disabled="setBusy"><span v-if="setBusy" class="spin" aria-hidden="true"></span>{{ setBusy ? 'Menyimpan…' : 'Simpan pengaturan' }}</button></div>
+        <p class="hint" style="text-align:right">Perubahan berlaku di semua server absensi dalam beberapa menit.</p>
+      </form>
+      <div v-else class="empty">{{ setErrLoad || 'Memuat pengaturan…' }}</div>
+    </section>
+  </main>
+
+  <!-- ===== MODAL PEGAWAI ===== -->
+  <div v-if="pm" class="modal" @click.self="closeModal"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="pm-h">
+    <div class="sheet-h"><h2 id="pm-h">{{ pm.pegawai_id ? 'Ubah pegawai' : 'Tambah pegawai' }}</h2><button class="xbtn" type="button" @click="closeModal" aria-label="Tutup"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <form @submit.prevent="savePeg" novalidate>
+      <div class="field"><label for="pm-nama">Nama lengkap</label><input id="pm-nama" ref="pmFirst" class="inp" :class="{bad: pmErr.nama}" v-model="pm.nama" autocomplete="off"><p class="err">{{ pmErr.nama }}</p></div>
+      <div class="field"><label for="pm-email">Email (untuk login)</label><input id="pm-email" class="inp" :class="{bad: pmErr.email}" type="email" v-model.trim="pm.email" autocomplete="off"><p class="err">{{ pmErr.email }}</p></div>
+      <div class="field"><label for="pm-jab">Jabatan</label><input id="pm-jab" class="inp" v-model="pm.jabatan" autocomplete="off"></div>
+      <div v-if="pm.pegawai_id" class="field"><label for="pm-status">Status</label><select id="pm-status" class="inp" v-model="pm.status"><option value="AKTIF">Aktif</option><option value="NONAKTIF">Nonaktif (tidak bisa login dan absen)</option></select></div>
+      <div class="field"><label for="pm-pin">{{ pm.pegawai_id ? 'Reset PIN (kosongkan bila tidak diubah)' : 'PIN awal' }}</label><input id="pm-pin" class="inp" :class="{bad: pmErr.pin}" inputmode="numeric" v-model.trim="pm.pin" autocomplete="off" placeholder="4–12 angka"><p class="err">{{ pmErr.pin }}</p><p class="hint">Sampaikan PIN ini ke pegawai. Setelah login pertama, PIN diacak (hash) dan dihapus dari Spreadsheet.</p></div>
+      <div v-if="pmMsg" class="banner bad" role="alert">{{ pmMsg }}</div>
+      <div class="acts"><button class="btn sec" type="button" @click="closeModal">Batal</button><button id="pmSave" class="btn" type="submit" :disabled="pmBusy">{{ pmBusy ? 'Menyimpan…' : 'Simpan' }}</button></div>
+    </form></div></div>
+
+  <!-- ===== MODAL SURAT TUGAS ===== -->
+  <div v-if="sm" class="modal" @click.self="closeModal"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sm-h">
+    <div class="sheet-h"><h2 id="sm-h">Buat Surat Tugas</h2><button class="xbtn" type="button" @click="closeModal" aria-label="Tutup"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <form @submit.prevent="saveST" novalidate>
+      <div class="field"><label for="sm-no">Nomor Surat Tugas</label><input id="sm-no" ref="smFirst" class="inp" :class="{bad: smErr.nomor}" v-model="sm.nomor" autocomplete="off"><p class="err">{{ smErr.nomor }}</p></div>
+      <div class="field"><label for="sm-tj">Tujuan penugasan</label><input id="sm-tj" class="inp" :class="{bad: smErr.tujuan}" v-model="sm.tujuan" autocomplete="off"><p class="err">{{ smErr.tujuan }}</p></div>
+      <div class="row2"><div class="field"><label for="sm-m">Tanggal mulai</label><input id="sm-m" class="inp" :class="{bad: smErr.tanggal_mulai}" type="date" v-model="sm.tanggal_mulai"><p class="err">{{ smErr.tanggal_mulai }}</p></div>
+        <div class="field"><label for="sm-s">Tanggal selesai</label><input id="sm-s" class="inp" :class="{bad: smErr.tanggal_selesai}" type="date" v-model="sm.tanggal_selesai"><p class="err">{{ smErr.tanggal_selesai }}</p></div></div>
+      <div class="field"><span class="lbl">Pegawai yang ditugaskan ({{ sm.pegawai_ids.length }} dipilih)</span>
+        <div class="tools" style="margin-bottom:8px"><button class="btn sec sm" type="button" @click="sm.pegawai_ids = aktifList.map(function (p) { return p.pegawai_id; })">Pilih semua</button><button class="btn sec sm" type="button" @click="sm.pegawai_ids = []">Kosongkan</button></div>
+        <div class="checks" id="smPeg"><label v-for="p in aktifList" :key="p.pegawai_id" class="chk"><input type="checkbox" :value="p.pegawai_id" v-model="sm.pegawai_ids"> {{ p.nama }}</label><span v-if="!aktifList.length" class="hint">Belum ada pegawai aktif.</span></div><p class="err">{{ smErr.pegawai_ids }}</p></div>
+      <div v-if="smMsg" class="banner bad" role="alert">{{ smMsg }}</div>
+      <div class="acts"><button class="btn sec" type="button" @click="closeModal">Batal</button><button id="smSave" class="btn" type="submit" :disabled="smBusy">{{ smBusy ? 'Menyimpan…' : 'Simpan' }}</button></div>
+    </form></div></div>
+
+  <!-- ===== MODAL FOTO ===== -->
+  <div v-if="fm" id="fotoModal" class="modal" @click.self="closeModal"><div class="sheet wide" role="dialog" aria-modal="true" aria-labelledby="fm-h">
+    <div class="sheet-h"><h2 id="fm-h">{{ fm.nama }} · {{ fmtTgl(fm.tanggal) }}</h2><button id="fmClose" ref="fmFirst" class="xbtn" type="button" @click="closeModal" aria-label="Tutup"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="photos">
+      <figure v-for="s in ['masuk', 'pulang']" :key="s" class="ph" :id="'fph-' + s">
+        <figcaption>{{ s === 'masuk' ? 'Absen masuk' : 'Absen pulang (terakhir)' }}<span>{{ fmt(fm['jam_' + s]) }}</span></figcaption>
+        <div class="phbox" aria-live="polite">
+          <img v-if="photos[fkey(s)]" :src="photos[fkey(s)]" :alt="'Foto ' + fm.nama + ' ' + (s === 'masuk' ? 'absen masuk' : 'absen pulang') + ' pukul ' + fmt(fm['jam_' + s])">
+          <span v-else-if="photoState[fkey(s)] === 'loading'">Memuat foto…</span>
+          <span v-else-if="photoState[fkey(s)] === 'error'">{{ photoMsg[fkey(s)] }}<br><button class="link" type="button" @click="loadFoto(s)">Coba lagi</button></span>
+          <span v-else>{{ fm['jam_' + s] ? 'Foto tidak tersedia' : (s === 'pulang' ? 'Belum absen pulang' : 'Tidak ada absen masuk') }}</span>
+        </div>
+      </figure>
+    </div>
+  </div></div>
+
+  <div v-if="toast.msg" class="toast" :class="toast.kind" role="status">{{ toast.msg }}</div>
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.min.js"></script>
+<script>
+// ============ PENGATURAN ============
+const MASTER_URL = 'https://script.google.com/macros/s/AKfycbxdv5vVFcDJHmAWS2el5px-TC3sGQ2qrHkCkJqKvz1ERHzQHLQzdpOtGnMcGwFskLpmmw/exec'; // URL Web App masterAbsen
+const CONFIGURED = /^https:\/\/script\.google(usercontent)?\.com\//.test(MASTER_URL);
+const SS_KEY = 'absen_admin';
+const BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+const HARI = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+
+const store = {
+  get(k) { try { return JSON.parse(sessionStorage.getItem(k)); } catch (e) { return null; } },
+  set(k, v) { try { sessionStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  del(k) { try { sessionStorage.removeItem(k); } catch (e) {} }
+};
+const pad = (n) => String(n).padStart(2, '0');
+const ymd = (d) => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const parseYmd = (s) => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+
+async function post(url, body, timeoutMs) {
+  const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), timeoutMs || 40000);
+  try {
+    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body), signal: ctl.signal });
+    if (!res.ok) throw new Error('http');
+    return await res.json();
+  } catch (e) {
+    return { ok: false, code: 'JARINGAN', message: e.name === 'AbortError' ? 'Server terlalu lama menjawab. Coba lagi.' : 'Tidak bisa terhubung. Periksa sambungan internet Anda.' };
+  } finally { clearTimeout(tm); }
+}
+
+// Sel CSV: titik koma (Excel Indonesia), kutip ganda, dan rumus dinetralkan.
+function csvCell(v) {
+  let s = v === undefined || v === null ? '' : String(v);
+  if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+  return /[;"\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+new Vue({
+  el: '#app',
+  data() {
+    const s = store.get(SS_KEY), now = new Date();
+    return {
+      configured: CONFIGURED, session: s, busy: false, view: 'dashboard',
+      lf: { email: '', password: '' }, loginErr: { email: '', password: '' }, loginMsg: '',
+      menu: [
+        { id: 'dashboard', label: 'Dashboard', icon: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>' },
+        { id: 'laporan', label: 'Laporan', icon: '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h7"/>' },
+        { id: 'pegawai', label: 'Pegawai', icon: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.5 3.2-5.5 6.5-5.5s5.9 2 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 010 6.8M18 14.8c1.9.7 3.2 2.4 3.5 5.2"/>' },
+        { id: 'st', label: 'Surat Tugas', icon: '<path d="M4 7h16v12H4z"/><path d="M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2M4 12h16"/>' },
+        { id: 'pengaturan', label: 'Pengaturan', icon: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/>' }
+      ],
+      copied: false, lokasiBelum: false, toast: { msg: '', kind: 'ok' }, toastTimer: null, lastFocus: null,
+      dash: null, dashDate: '', dashBusy: false, dashErr: '', trenTabel: false, tip: null,
+      lf2: { dari: ymd(new Date(now.getFullYear(), now.getMonth(), 1)), sampai: ymd(now), pegawai_id: '' },
+      lap: null, lapBusy: false, lapErr: '', dicetak: '', lapPegNama: '',
+      pegawai: [], pegBusy: false, pegErr: '', pm: null, pmErr: {}, pmMsg: '', pmBusy: false,
+      st: [], stBusy: false, stErr: '', sm: null, smErr: {}, smMsg: '', smBusy: false,
+      sf: null, setErr: {}, setErrLoad: '', setBusy: false, setMsg: '', setMsgKind: 'ok', liburBaru: '', geoBusy: false, geoMsg: '',
+      hariList: [{ v: '1', l: 'Sen' }, { v: '2', l: 'Sel' }, { v: '3', l: 'Rab' }, { v: '4', l: 'Kam' }, { v: '5', l: 'Jum' }, { v: '6', l: 'Sab' }, { v: '7', l: 'Min' }],
+      fm: null, photos: {}, photoState: {}, photoMsg: {}
+    };
+  },
+  computed: {
+    persen() { const r = this.dash && this.dash.ringkas; return r && r.pegawai_aktif ? Math.round(r.hadir / r.pegawai_aktif * 100) : 0; },
+    aktifList() { return this.pegawai.filter((p) => p.status === 'AKTIF'); },
+    chart() {
+      const W = 640, H = 230, L = 30, T = 14, base = 186, R = 6;
+      const tren = this.dash ? this.dash.tren : [];
+      const max = Math.max(1, ...tren.map((t) => t.hadir));
+      const top = max <= 4 ? max : Math.ceil(max / 4) * 4, step = top <= 4 ? 1 : top / 4;
+      const ticks = []; for (let v = 0; v <= top; v += step) ticks.push({ v: Math.round(v), y: base - (v / top) * (base - T) });
+      const slot = (W - L - R) / Math.max(tren.length, 1), bw = Math.min(30, slot * 0.62);
+      const path = (x, y, w, h, round) => { const r = round ? Math.min(4, h / 2) : 0; return round ? `M${x},${y + h}L${x},${y + r}Q${x},${y} ${x + r},${y}L${x + w - r},${y}Q${x + w},${y} ${x + w},${y + r}L${x + w},${y + h}Z` : `M${x},${y}L${x + w},${y}L${x + w},${y + h}L${x},${y + h}Z`; };
+      const bars = tren.map((t, i) => {
+        const x = L + slot * i + (slot - bw) / 2, unit = (base - T) / top, tepat = t.hadir - t.terlambat, gap = t.terlambat > 0 && tepat > 0 ? 2 : 0;
+        const hTepat = tepat * unit, hTelat = t.terlambat * unit, d = parseYmd(t.tanggal);
+        const hT = Math.max(0, hTepat - gap), yTelat = base - hTepat - hTelat;
+        return {
+          tanggal: t.tanggal, hadir: t.hadir, terlambat: t.terlambat, workday: t.hari_kerja, x, w: bw, slotX: L + slot * i, slotW: slot, hTepat, hTelat,
+          pTepat: path(x, base - hTepat + gap * 0, bw, hTepat - 0, t.terlambat === 0), pTelat: path(x, yTelat, bw, Math.max(0, hTelat - gap), true),
+          hari: HARI[d.getDay()].slice(0, 3), tgl: d.getDate(),
+          aria: `${HARI[d.getDay()]} ${d.getDate()} ${BULAN[d.getMonth()]}: ${tepat} tepat waktu, ${t.terlambat} terlambat${t.hari_kerja ? '' : ', bukan hari kerja'}`
+        };
+      });
+      return { W, H, L, T, base, ticks, bars };
+    }
+  },
+  mounted() {
+    if (this.session) this.afterLogin(); else this.$nextTick(() => this.$refs.email && this.$refs.email.focus());
+    this.$watch('lf.email', () => { this.loginErr.email = ''; this.loginMsg = ''; });
+    this.$watch('lf.password', () => { this.loginErr.password = ''; this.loginMsg = ''; });
+    document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && (this.pm || this.sm || this.fm)) this.closeModal(); });
+  },
+  methods: {
+    fmt(t) { return t ? String(t).replace(':', '.') : '–'; },
+    fmtMenit(m) { m = Number(m) || 0; return m ? Math.floor(m / 60) + 'j ' + pad(m % 60) + 'm' : '0j 00m'; },
+    fmtTgl(s) { if (!s) return ''; const d = parseYmd(s); return HARI[d.getDay()] + ', ' + d.getDate() + ' ' + BULAN[d.getMonth()].slice(0, 3) + ' ' + d.getFullYear(); },
+    say(msg, kind) { this.toast = { msg, kind: kind || 'ok' }; clearTimeout(this.toastTimer); this.toastTimer = setTimeout(() => { this.toast.msg = ''; }, 4500); },
+
+    // --- sesi
+    async login() {
+      this.loginErr = { email: '', password: '' }; this.loginMsg = '';
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.lf.email)) this.loginErr.email = 'Masukkan email yang valid.';
+      if (!this.lf.password) this.loginErr.password = 'Password wajib diisi.';
+      if (this.loginErr.email || this.loginErr.password) { document.getElementById(this.loginErr.email ? 'email' : 'password').focus(); return; }
+      if (!CONFIGURED) { this.loginMsg = 'Alamat web app masterAbsen belum diisi di halaman ini.'; return; }
+      this.busy = true;
+      const r = await post(MASTER_URL, { action: 'admin_login', email: this.lf.email, password: this.lf.password });
+      this.busy = false;
+      if (!r.ok) { this.loginMsg = r.message || 'Gagal masuk. Coba lagi.'; return; }
+      this.lf.password = '';
+      this.session = { token: r.token, nama: r.nama, email: r.email, id_app: r.id_app, nama_kantor: r.nama_kantor, engine_id: r.engine_id, engine_url: r.engine_url };
+      store.set(SS_KEY, this.session); this.view = 'dashboard'; this.afterLogin();
+    },
+    logout(msg) {
+      store.del(SS_KEY); this.session = null; this.dash = null; this.lap = null; this.pegawai = []; this.st = []; this.sf = null; this.fm = this.pm = this.sm = null;
+      this.loginMsg = typeof msg === 'string' ? msg : ''; this.$nextTick(() => this.$refs.email && this.$refs.email.focus());
+    },
+    afterLogin() { this.loadDash(); this.loadSettings(true); },
+    copyId() {
+      const done = () => { this.copied = true; setTimeout(() => { this.copied = false; }, 2000); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(this.session.id_app).then(done, () => {}); else done();
+    },
+
+    // --- panggilan ke engine (dengan pengalihan bila engine sibuk)
+    async api(action, body, ms) {
+      const s = this.session;
+      const call = () => s.engine_url ? post(s.engine_url, Object.assign({ action, id_app: s.id_app, token: s.token }, body), ms) : Promise.resolve({ ok: false, code: 'SIBUK' });
+      const ramai = { ok: false, code: 'SIBUK', message: 'Server sedang ramai. Coba lagi dalam beberapa saat.' };
+      let r = await call();
+      for (let i = 0; i < 2 && !r.ok && (r.code === 'SIBUK' || r.code === 'JARINGAN'); i++) {
+        const rr = await post(MASTER_URL, { action: 'reroute', id_app: s.id_app, engine_id: s.engine_id });
+        if (!rr.ok) return r.code === 'SIBUK' || rr.code === 'SEMUA_SIBUK' ? ramai : r;
+        if (rr.engine_url === s.engine_url) break;
+        s.engine_id = rr.engine_id; s.engine_url = rr.engine_url; store.set(SS_KEY, s);
+        r = await call();
+      }
+      if (!r.ok && r.code === 'SESI_HABIS') { this.logout('Sesi berakhir. Silakan masuk lagi.'); }
+      return r.code === 'SIBUK' ? ramai : r;
+    },
+
+    go(v) {
+      this.view = v; this.toast.msg = '';
+      if (v === 'dashboard') this.loadDash();
+      if (v === 'laporan' && !this.pegawai.length) this.loadPegawai();
+      if (v === 'pegawai') this.loadPegawai();
+      if (v === 'st') { this.loadST(); if (!this.pegawai.length) this.loadPegawai(); }
+      if (v === 'pengaturan') this.loadSettings();
+    },
+
+    // --- dashboard
+    async loadDash() {
+      this.dashBusy = true; this.dashErr = '';
+      const r = await this.api('admin_dashboard', this.dashDate ? { tanggal: this.dashDate } : {});
+      this.dashBusy = false;
+      if (r.ok) { this.dash = r; this.dashDate = r.tanggal === r.hari_ini ? '' : r.tanggal; if (!this.dashDate) this.dashDate = r.tanggal; this.tip = null; }
+      else if (r.code !== 'SESI_HABIS') this.dashErr = r.message || 'Gagal memuat dashboard.';
+    },
+    showTip(b) { this.tip = { b, left: ((b.x + b.w / 2) / this.chart.W * 100) + '%', top: ((this.chart.base - (b.hTepat + b.hTelat)) / this.chart.H * 100) + '%' }; },
+
+    // --- laporan
+    preset(k) {
+      const n = new Date();
+      if (k === 'bulan') this.lf2 = Object.assign({}, this.lf2, { dari: ymd(new Date(n.getFullYear(), n.getMonth(), 1)), sampai: ymd(n) });
+      if (k === 'lalu') this.lf2 = Object.assign({}, this.lf2, { dari: ymd(new Date(n.getFullYear(), n.getMonth() - 1, 1)), sampai: ymd(new Date(n.getFullYear(), n.getMonth(), 0)) });
+      if (k === 'minggu') this.lf2 = Object.assign({}, this.lf2, { dari: ymd(new Date(n.getFullYear(), n.getMonth(), n.getDate() - 6)), sampai: ymd(n) });
+      this.loadLaporan();
+    },
+    async loadLaporan() {
+      this.lapErr = '';
+      if (!this.lf2.dari || !this.lf2.sampai) { this.lapErr = 'Isi tanggal awal dan akhir.'; return; }
+      this.lapBusy = true;
+      const r = await this.api('admin_laporan', { dari: this.lf2.dari, sampai: this.lf2.sampai, pegawai_id: this.lf2.pegawai_id }, 60000);
+      this.lapBusy = false;
+      if (r.ok) {
+        this.lap = r; const p = this.pegawai.find((x) => x.pegawai_id === this.lf2.pegawai_id); this.lapPegNama = p ? p.nama : '';
+        const n = new Date(); this.dicetak = this.fmtTgl(ymd(n)) + ' ' + pad(n.getHours()) + '.' + pad(n.getMinutes());
+      } else if (r.code !== 'SESI_HABIS') this.lapErr = r.message || 'Gagal memuat laporan.';
+    },
+    cetak() { window.print(); },
+    csv(jenis) {
+      const l = this.lap; if (!l) return;
+      let head, rows, nama;
+      if (jenis === 'rekap') {
+        head = ['Nama', 'Jabatan', 'Hari kerja', 'Hadir', 'Tepat', 'Terlambat', 'Tanpa keterangan', 'Dinas luar', 'ST tanpa absen', 'Tanpa pulang', 'Total jam', 'Lembur', 'Rata-rata masuk'];
+        rows = l.rekap.map((r) => [r.nama, r.jabatan, r.hari_kerja, r.hadir, r.tepat, r.terlambat, r.alpa, r.dinas_luar, r.dinas_tanpa_absen, r.tanpa_pulang, this.fmtMenit(r.total_menit), this.fmtMenit(r.lembur_menit), r.rata_jam_masuk]);
+        nama = 'rekap';
+      } else {
+        head = ['Tanggal', 'Nama', 'Jabatan', 'Masuk', 'Pulang', 'Durasi', 'Lembur', 'Status', 'Keterangan'];
+        rows = l.detail.map((r) => [r.tanggal, r.nama, r.jabatan, r.jam_masuk, r.jam_pulang, r.durasi_menit === null || r.durasi_menit === undefined ? '' : this.fmtMenit(r.durasi_menit), r.lembur_menit ? this.fmtMenit(r.lembur_menit) : '', r.status, r.keterangan]);
+        nama = 'rincian';
+      }
+      const text = '﻿' + [head].concat(rows).map((r) => r.map(csvCell).join(';')).join('\r\n');
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
+      a.download = `laporan-${nama}-${l.dari}_${l.sampai}.csv`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    },
+
+    // --- pegawai
+    async loadPegawai() {
+      this.pegBusy = true; this.pegErr = '';
+      const r = await this.api('admin_pegawai_list', {});
+      this.pegBusy = false;
+      if (r.ok) this.pegawai = r.rows; else if (r.code !== 'SESI_HABIS') this.pegErr = r.message || 'Gagal memuat pegawai.';
+    },
+    openPeg(p, ev) {
+      this.lastFocus = ev && ev.currentTarget; this.pmErr = {}; this.pmMsg = '';
+      this.pm = p ? { pegawai_id: p.pegawai_id, nama: p.nama, email: p.email, jabatan: p.jabatan, status: p.status, pin: '' } : { pegawai_id: '', nama: '', email: '', jabatan: '', status: 'AKTIF', pin: '' };
+      this.$nextTick(() => this.$refs.pmFirst && this.$refs.pmFirst.focus());
+    },
+    async savePeg() {
+      this.pmErr = {}; this.pmMsg = ''; this.pmBusy = true;
+      const r = await this.api('admin_pegawai_save', this.pm);
+      this.pmBusy = false;
+      if (r.ok) { const baru = !this.pm.pegawai_id; this.closeModal(); this.say(baru ? 'Pegawai ditambahkan.' : 'Perubahan disimpan.'); this.loadPegawai(); return; }
+      if (r.errors) this.pmErr = r.errors; else if (r.code !== 'SESI_HABIS') this.pmMsg = r.message || 'Gagal menyimpan.';
+    },
+
+    // --- surat tugas
+    async loadST() {
+      this.stBusy = true; this.stErr = '';
+      const r = await this.api('admin_st_list', {});
+      this.stBusy = false;
+      if (r.ok) this.st = r.rows; else if (r.code !== 'SESI_HABIS') this.stErr = r.message || 'Gagal memuat Surat Tugas.';
+    },
+    openST(ev) {
+      this.lastFocus = ev && ev.currentTarget; this.smErr = {}; this.smMsg = '';
+      const t = ymd(new Date()); this.sm = { nomor: '', tujuan: '', tanggal_mulai: t, tanggal_selesai: t, pegawai_ids: [] };
+      this.$nextTick(() => this.$refs.smFirst && this.$refs.smFirst.focus());
+    },
+    async saveST() {
+      this.smErr = {}; this.smMsg = ''; this.smBusy = true;
+      const r = await this.api('admin_st_save', this.sm);
+      this.smBusy = false;
+      if (r.ok) { this.closeModal(); this.say('Surat Tugas disimpan untuk ' + r.st_ids.length + ' pegawai.'); this.loadST(); return; }
+      if (r.errors) this.smErr = r.errors; else if (r.code !== 'SESI_HABIS') this.smMsg = r.message || 'Gagal menyimpan.';
+    },
+    async stStatus(r, status) {
+      if (status === 'BATAL' && !window.confirm('Batalkan Surat Tugas ' + r.nomor + ' untuk ' + r.nama + '?\nPegawai tidak lagi boleh absen di luar radius.')) return;
+      const x = await this.api('admin_st_save', { st_id: r.st_id, pegawai_ids: [r.pegawai_id], nomor: r.nomor, tujuan: r.tujuan, tanggal_mulai: r.tanggal_mulai, tanggal_selesai: r.tanggal_selesai, status });
+      if (x.ok) { this.say(status === 'BATAL' ? 'Surat Tugas dibatalkan.' : 'Surat Tugas diaktifkan lagi.'); this.loadST(); } else if (x.code !== 'SESI_HABIS') this.say(x.message || 'Gagal mengubah.', 'bad');
+    },
+
+    // --- pengaturan
+    toForm(s) {
+      return {
+        jam_masuk: s.jam_masuk, jam_pulang: s.jam_pulang, toleransi_menit: s.toleransi_menit, zona_waktu: s.zona_waktu || 'Asia/Jakarta',
+        lat_kantor: s.lat_kantor, lng_kantor: s.lng_kantor, radius_m: s.radius_m, max_akurasi_m: s.max_akurasi_m,
+        wajib_radius: String(s.wajib_radius).toUpperCase() !== 'TIDAK', hari_kerja: String(s.hari_kerja || '').split(',').filter(Boolean),
+        hari_libur: String(s.hari_libur || '').split(',').filter(Boolean)
+      };
+    },
+    async loadSettings(quiet) {
+      const r = await this.api('admin_settings_get', {});
+      if (r.ok) { this.lokasiBelum = !r.settings.lat_kantor || !r.settings.lng_kantor; if (!quiet || !this.sf) this.sf = this.toForm(r.settings); this.setErrLoad = ''; }
+      else if (!quiet && r.code !== 'SESI_HABIS') this.setErrLoad = r.message || 'Gagal memuat pengaturan.';
+    },
+    addLibur() { if (this.liburBaru && this.sf.hari_libur.indexOf(this.liburBaru) === -1) this.sf.hari_libur = this.sf.hari_libur.concat(this.liburBaru).sort(); this.liburBaru = ''; },
+    delLibur(d) { this.sf.hari_libur = this.sf.hari_libur.filter((x) => x !== d); },
+    pakaiLokasi() {
+      if (!navigator.geolocation) { this.geoMsg = 'Perangkat ini tidak mendukung lokasi.'; return; }
+      this.geoBusy = true; this.geoMsg = '';
+      navigator.geolocation.getCurrentPosition((p) => {
+        this.geoBusy = false; this.sf.lat_kantor = p.coords.latitude.toFixed(6); this.sf.lng_kantor = p.coords.longitude.toFixed(6);
+        this.geoMsg = 'Terisi dari lokasi Anda (akurasi ' + Math.round(p.coords.accuracy) + ' m). Pastikan Anda sedang berada di kantor.';
+      }, (e) => { this.geoBusy = false; this.geoMsg = e.code === 1 ? 'Izin lokasi ditolak. Isi koordinat secara manual.' : 'Lokasi tidak ditemukan. Coba lagi atau isi manual.'; }, { enableHighAccuracy: true, timeout: 12000 });
+    },
+    async saveSettings() {
+      this.setErr = {}; this.setMsg = ''; this.setBusy = true;
+      const f = this.sf;
+      const values = {
+        jam_masuk: f.jam_masuk, jam_pulang: f.jam_pulang, toleransi_menit: f.toleransi_menit, zona_waktu: f.zona_waktu, lat_kantor: f.lat_kantor, lng_kantor: f.lng_kantor,
+        radius_m: f.radius_m, max_akurasi_m: f.max_akurasi_m, wajib_radius: f.wajib_radius ? 'YA' : 'TIDAK', hari_kerja: f.hari_kerja.join(','), hari_libur: f.hari_libur.join(',')
+      };
+      const r = await this.api('admin_settings_set', { values });
+      this.setBusy = false;
+      if (r.ok) { this.sf = this.toForm(r.settings); this.lokasiBelum = !r.settings.lat_kantor || !r.settings.lng_kantor; this.setMsgKind = 'ok'; this.setMsg = 'Pengaturan tersimpan. Berlaku di semua server absensi dalam beberapa menit.'; window.scrollTo(0, 0); }
+      else if (r.errors) { this.setErr = r.errors; this.setMsgKind = 'bad'; this.setMsg = 'Periksa kembali isian yang ditandai.'; window.scrollTo(0, 0); }
+      else if (r.code !== 'SESI_HABIS') { this.setMsgKind = 'bad'; this.setMsg = r.message || 'Gagal menyimpan.'; }
+    },
+
+    // --- foto & modal
+    fkey(tipe) { return this.fm.pegawai_id + '|' + this.fm.tanggal + '|' + tipe; },
+    openFoto(r, ev) {
+      this.lastFocus = ev && ev.currentTarget; this.fm = r; document.body.style.overflow = 'hidden';
+      this.$nextTick(() => this.$refs.fmFirst && this.$refs.fmFirst.focus());
+      ['masuk', 'pulang'].forEach((s) => { if (r['foto_' + s]) this.loadFoto(s); });
+    },
+    async loadFoto(tipe) {
+      const d = this.fm, key = d.pegawai_id + '|' + d.tanggal + '|' + tipe;
+      if (this.photos[key]) return;
+      this.$set(this.photoState, key, 'loading');
+      const r = await this.api('admin_foto', { pegawai_id: d.pegawai_id, tanggal: d.tanggal, tipe }, 45000);
+      if (r.ok) { this.$set(this.photos, key, r.foto); this.$set(this.photoState, key, 'ok'); }
+      else { this.$set(this.photoState, key, r.code === 'FOTO_TIDAK_ADA' ? 'none' : 'error'); this.$set(this.photoMsg, key, r.message || 'Foto gagal dimuat.'); }
+    },
+    closeModal() {
+      this.pm = this.sm = this.fm = null; document.body.style.overflow = '';
+      this.$nextTick(() => this.lastFocus && this.lastFocus.focus && this.lastFocus.focus());
+    }
+  }
+});
+</script>
+</body>
+</html>
