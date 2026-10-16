@@ -36,6 +36,8 @@ input.txt.bad{border-color:var(--bad);box-shadow:0 0 0 1px var(--bad)}
 .hint{margin:6px 0 0;font-size:13px;color:var(--mute)}
 .btn{width:100%;height:54px;border:0;border-radius:14px;background:var(--brand);color:#fff;font-size:16.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px}
 .btn:hover{background:var(--brand-d)}
+.btn.alt{background:#fff;color:var(--brand-d);border:2px solid var(--brand)}
+.btn.alt:hover{background:var(--brand-l)}
 .btn[disabled]{background:#CBD7D3;color:#2F3F3B;cursor:not-allowed}
 .link{background:none;border:0;color:var(--brand-d);font-weight:700;font-size:14.5px;padding:12px 4px;cursor:pointer;min-height:44px}
 .banner{padding:12px 14px;border-radius:12px;font-size:13.5px;font-weight:600;line-height:1.45;margin-bottom:14px}
@@ -162,7 +164,7 @@ figure.ph figcaption span{font-variant-numeric:tabular-nums;color:var(--mute)}
         <button id="avatar" class="avatar" type="button" @click="logout" aria-label="Keluar dari akun">{{ initials }}</button>
       </div>
       <div v-if="demo" class="banner demo" style="margin-top:14px">Mode contoh: data absen hanya tersimpan di perangkat ini.</div>
-      <div><span id="pill" class="pill" :style="{background: pill.bg, color: pill.fg}"><i></i>{{ pill.t }}</span></div>
+      <div><span id="pill" class="pill" :style="{background: pill.bg, color: pill.fg}"><i></i>{{ pill.t }}</span><span v-if="today.keterangan" id="ket" class="pill" style="margin-left:8px;background:#FDEDD3;color:#8A4B00"><i></i>{{ today.keterangan }}</span></div>
 
       <section class="card" aria-labelledby="jam-h">
         <h2 id="jam-h">Jam absen hari ini</h2>
@@ -175,7 +177,7 @@ figure.ph figcaption span{font-variant-numeric:tabular-nums;color:var(--mute)}
           <div>
             <div class="tl"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 17l5-5-5-5M19 12H7M10 4H5a2 2 0 00-2 2v12a2 2 0 002 2h5"/></svg>Clock out</div>
             <div id="tOut" class="tv" :class="{none: !today.jam_pulang}">{{ fmt(today.jam_pulang) }}</div>
-            <div class="tn">{{ today.jam_pulang ? 'Sudah pulang' : 'Belum clock out' }}</div>
+            <div class="tn">{{ today.jam_pulang ? 'Pulang terakhir' : 'Belum clock out' }}</div>
           </div>
         </div>
       </section>
@@ -188,10 +190,10 @@ figure.ph figcaption span{font-variant-numeric:tabular-nums;color:var(--mute)}
 
       <div class="act">
         <input ref="selfie" id="selfie" class="sr" type="file" accept="image/*" capture="user" tabindex="-1" @change="onSelfie">
-        <button id="absenBtn" class="btn" type="button" :disabled="btnDisabled" @click="startClock">
+        <button id="absenBtn" class="btn" :class="{alt: stage === 2}" type="button" :disabled="btnDisabled" @click="startClock">
           <span v-if="busy" class="spin" aria-hidden="true"></span>{{ btnLabel }}
         </button>
-        <div class="note">Foto selfie dicap waktu dan lokasi, lalu dicatat saat Anda absen.</div>
+        <div class="note">{{ stage === 2 ? 'Lembur? Absen pulang lagi. Yang dipakai adalah jam pulang terakhir.' : 'Foto selfie dicap waktu dan lokasi, lalu dicatat saat Anda absen.' }}</div>
       </div>
     </main>
 
@@ -214,7 +216,7 @@ figure.ph figcaption span{font-variant-numeric:tabular-nums;color:var(--mute)}
         <li v-for="r in history" :key="r.tanggal">
           <button class="rowbtn" type="button" @click="openDetail(r, $event)" :aria-label="'Lihat foto absen ' + labelTanggal(r.tanggal)">
             <div class="d"><b>{{ dayNum(r.tanggal) }}</b><span>{{ dayName(r.tanggal) }}</span></div>
-            <div class="t">{{ fmt(r.jam_masuk) }} – {{ fmt(r.jam_pulang) }}<small>{{ durasi(r) }}</small></div>
+            <div class="t">{{ fmt(r.jam_masuk) }} – {{ fmt(r.jam_pulang) }}<small>{{ durasi(r) }}{{ r.keterangan ? ' · ' + r.keterangan : '' }}</small></div>
             <span class="tag" :class="tagClass(r)">{{ tagText(r) }}</span>
             <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
           </button>
@@ -405,8 +407,8 @@ new Vue({
     todayLabel() { const d = new Date(); return HARI[d.getDay()] + ', ' + d.getDate() + ' ' + BULAN[d.getMonth()] + ' ' + d.getFullYear(); },
     stage() { return !this.today.jam_masuk ? 0 : (!this.today.jam_pulang ? 1 : 2); },
     pill() { return [{ t: 'Belum absen masuk', bg: '#E4EAE8', fg: '#2F3F3B' }, { t: 'Sedang bekerja', bg: '#E1F2EF', fg: '#0B5B54' }, { t: 'Selesai hari ini', bg: '#E6F4EA', fg: '#1B5E34' }][this.stage]; },
-    btnLabel() { return this.busy ? 'Menyimpan…' : ['Absen Masuk', 'Absen Pulang', 'Absensi hari ini selesai'][this.stage]; },
-    btnDisabled() { return this.busy || this.stage === 2 || this.loc.state === 'loading'; },
+    btnLabel() { return this.busy ? 'Menyimpan…' : ['Absen Masuk', 'Absen Pulang', 'Absen Pulang Lagi (Lembur)'][this.stage]; },
+    btnDisabled() { return this.busy || this.loc.state === 'loading'; },
     locTitle() { return ({ idle: 'Lokasi belum dicek', loading: 'Mencari lokasi…', ok: 'Lokasi siap', denied: 'Izin lokasi ditolak', error: 'Lokasi tidak ditemukan' })[this.loc.state]; },
     locSub() {
       if (this.loc.state === 'ok') return 'Akurasi GPS ' + Math.round(this.loc.acc) + ' m';
@@ -509,6 +511,7 @@ new Vue({
         { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }));
     },
     startClock() {
+      if (this.stage === 2 && !window.confirm('Catat absen pulang lagi (lembur)?\nJam pulang terakhir Anda akan diganti dengan jam sekarang.')) return;
       if (this.loc.state !== 'ok') { this.say('Lokasi belum siap. Aktifkan GPS lalu coba lagi.', 'bad'); this.getLocation(); return; }
       this.$refs.selfie.value = ''; this.$refs.selfie.click(); // buka kamera depan; lanjut di onSelfie
     },
