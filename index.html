@@ -43,6 +43,11 @@ input.txt.bad{border-color:var(--bad);box-shadow:0 0 0 1px var(--bad)}
 .banner{padding:12px 14px;border-radius:12px;font-size:13.5px;font-weight:600;line-height:1.45;margin-bottom:14px}
 .banner.demo{background:var(--warn-l);color:var(--warn)}
 .banner.bad{background:var(--bad-l);color:var(--bad)}
+.banner.queue{background:var(--brand-l);color:#0B5B54}
+.banner.queue.wait{background:var(--warn-l);color:var(--warn)}
+.banner ul{margin:6px 0 0;padding:0 0 0 18px;font-weight:600}
+.banner .link{padding:6px 0;min-height:40px;color:inherit;text-decoration:underline}
+.banner .x{float:right;background:none;border:0;color:inherit;font-weight:800;font-size:18px;line-height:1;cursor:pointer;min-width:44px;min-height:44px;margin:-12px -10px 0 0}
 .office{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--brand-l);border-radius:14px;margin-bottom:18px}
 .office b{display:block;font-size:15px}.office span{font-size:12.5px;color:var(--mute);font-family:ui-monospace,Menlo,monospace}
 .spin{width:18px;height:18px;border:3px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:sp .8s linear infinite}
@@ -161,9 +166,17 @@ figure.ph figcaption span{font-variant-numeric:tabular-nums;color:var(--mute)}
           <h1 class="hello">Halo, {{ firstName }}</h1>
           <div class="where">{{ tenant.nama_kantor }}</div>
         </div>
-        <button id="avatar" class="avatar" type="button" @click="logout" aria-label="Keluar dari akun">{{ initials }}</button>
+        <button id="avatar" class="avatar" type="button" @click="logout($event)" aria-label="Keluar dari akun">{{ initials }}</button>
       </div>
       <div v-if="demo" class="banner demo" style="margin-top:14px">Mode contoh: data absen hanya tersimpan di perangkat ini.</div>
+      <div v-for="n in notices" :key="n.id" class="banner bad" role="alert" style="margin-top:14px"><button class="x" type="button" aria-label="Tutup pemberitahuan" @click="dismissNotice(n.id)">×</button>{{ n.msg }}</div>
+      <div v-if="mine.length" id="antrean" class="banner queue" :class="{wait: !online || mine.some(function (q) { return q.state === 'login'; })}" role="status" aria-live="polite" style="margin-top:14px">
+        <b v-if="pendClock.length">{{ pendClock.length }} absen belum selesai dikirim. Aman tersimpan di HP Anda.</b>
+        <b v-else>Foto absen sedang menyusul.</b>
+        <div v-if="!online">Tidak ada sinyal. Absen dikirim otomatis begitu tersambung.</div>
+        <ul><li v-for="q in mine" :key="q.id">{{ qText(q) }}</li></ul>
+        <button v-if="online" id="kirimSekarang" class="link" type="button" @click="flush(true)">Kirim sekarang</button>
+      </div>
       <div><span id="pill" class="pill" :style="{background: pill.bg, color: pill.fg}"><i></i>{{ pill.t }}</span><span v-if="today.keterangan" id="ket" class="pill" style="margin-left:8px;background:#FDEDD3;color:#8A4B00"><i></i>{{ today.keterangan }}</span></div>
 
       <section class="card" aria-labelledby="jam-h">
@@ -171,13 +184,13 @@ figure.ph figcaption span{font-variant-numeric:tabular-nums;color:var(--mute)}
         <div class="times">
           <div>
             <div class="tl"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3M14 4h5a2 2 0 012 2v12a2 2 0 01-2 2h-5"/></svg>Clock in</div>
-            <div id="tIn" class="tv" :class="{none: !today.jam_masuk}">{{ fmt(today.jam_masuk) }}</div>
-            <div class="tn">{{ !today.jam_masuk ? 'Belum clock in' : (today.status === 'TERLAMBAT' ? 'Terlambat' : 'Tepat waktu') }}</div>
+            <div id="tIn" class="tv" :class="{none: !view.jam_masuk}">{{ fmt(view.jam_masuk) }}</div>
+            <div class="tn">{{ !view.jam_masuk ? 'Belum clock in' : (view.tmpMasuk ? 'Menunggu terkirim' : (view.status === 'TERLAMBAT' ? 'Terlambat' : 'Tepat waktu')) }}</div>
           </div>
           <div>
             <div class="tl"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 17l5-5-5-5M19 12H7M10 4H5a2 2 0 00-2 2v12a2 2 0 002 2h5"/></svg>Clock out</div>
-            <div id="tOut" class="tv" :class="{none: !today.jam_pulang}">{{ fmt(today.jam_pulang) }}</div>
-            <div class="tn">{{ today.jam_pulang ? 'Pulang terakhir' : 'Belum clock out' }}</div>
+            <div id="tOut" class="tv" :class="{none: !view.jam_pulang}">{{ fmt(view.jam_pulang) }}</div>
+            <div class="tn">{{ view.tmpPulang ? 'Menunggu terkirim' : (view.jam_pulang ? 'Pulang terakhir' : 'Belum clock out') }}</div>
           </div>
         </div>
       </section>
@@ -193,7 +206,7 @@ figure.ph figcaption span{font-variant-numeric:tabular-nums;color:var(--mute)}
         <button id="absenBtn" class="btn" :class="{alt: stage === 2}" type="button" :disabled="btnDisabled" @click="startClock">
           <span v-if="busy" class="spin" aria-hidden="true"></span>{{ btnLabel }}
         </button>
-        <div class="note">{{ stage === 2 ? 'Lembur? Absen pulang lagi. Yang dipakai adalah jam pulang terakhir.' : 'Foto selfie dicap waktu dan lokasi, lalu dicatat saat Anda absen.' }}</div>
+        <div class="note">{{ stage === 2 ? 'Lembur? Absen pulang lagi. Yang dipakai adalah jam pulang terakhir.' : 'Absen langsung tersimpan di HP, lalu dikirim otomatis. Selfie dicap waktu dan lokasi.' }}</div>
       </div>
     </main>
 
@@ -263,7 +276,9 @@ figure.ph figcaption span{font-variant-numeric:tabular-nums;color:var(--mute)}
 const MASTER_URL = 'https://script.google.com/macros/s/AKfycbxdv5vVFcDJHmAWS2el5px-TC3sGQ2qrHkCkJqKvz1ERHzQHLQzdpOtGnMcGwFskLpmmw/exec';
 const DEMO = !/^https:\/\/script\.google(usercontent)?\.com\//.test(MASTER_URL);
 const ID_RE = /^ABS-[A-Z2-9]{4}-[A-Z2-9]{4}$/;
-const LS_TENANT = 'absen_tenant', LS_SESSION = 'absen_session', LS_DEMO = 'absen_demo_db';
+const LS_TENANT = 'absen_tenant', LS_SESSION = 'absen_session', LS_DEMO = 'absen_demo_db', LS_QUEUE = 'absen_queue', LS_NOTICE = 'absen_notice';
+// Kode balasan yang berarti "coba lagi nanti" (bukan penolakan). Selain ini dianggap penolakan tetap.
+const RETRY_CODES = ['JARINGAN', 'SIBUK', 'SERVER_ERROR'];
 const BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 const HARI = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
 
@@ -273,6 +288,12 @@ const store = {
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
   del(k) { try { localStorage.removeItem(k); } catch (e) {} }
 };
+
+// Antrean absen yang belum selesai dikirim; bertahan walau aplikasi ditutup.
+function loadQueue() {
+  const q = store.get(LS_QUEUE);
+  return Array.isArray(q) ? q.filter((x) => x && x.id && x.tipe && x.id_app).map((x) => Object.assign({}, x, { state: 'tunggu', next: 0 })) : [];
+}
 
 // ============ TANGGAL ============
 const pad = (n) => String(n).padStart(2, '0');
@@ -337,11 +358,15 @@ async function demoEngine(p) {
   }
   if (p.action === 'today') return { ok: true, tanggal: today, ...(db[today] || {}) };
   if (p.action === 'clock') {
-    const r = db[today] || { tanggal: today }; const now = new Date();
+    const r = db[today] || { tanggal: today }; const now = new Date(Date.now() - (p.tunda_ms >= 90000 ? p.tunda_ms : 0));
     if (p.tipe === 'masuk') { if (r.jam_masuk) return { ok: true, ...r }; r.jam_masuk = hm(now); r.status = (now.getHours() * 60 + now.getMinutes()) > 8 * 60 ? 'TERLAMBAT' : 'TEPAT'; }
     else { if (!r.jam_masuk) return { ok: false, code: 'BELUM_MASUK', message: 'Anda belum absen masuk.' }; r.jam_pulang = hm(now); }
     if (p.foto) r['foto_' + p.tipe + '_data'] = p.foto;
     db[today] = r; store.set(LS_DEMO, db); return { ok: true, ...flags(r) };
+  }
+  if (p.action === 'upload_foto') {
+    const r = db[p.tanggal]; if (!r || !r['jam_' + p.tipe]) return { ok: false, code: 'ABSEN_TIDAK_ADA', message: 'Absen belum tercatat.' };
+    r['foto_' + p.tipe + '_data'] = p.foto; db[p.tanggal] = r; store.set(LS_DEMO, db); return { ok: true };
   }
   if (p.action === 'history') {
     const rows = Object.values(db).filter((r) => r.tanggal.slice(0, 7) === p.bulan).sort((a, b) => b.tanggal.localeCompare(a.tanggal)).map(flags);
@@ -395,7 +420,8 @@ new Vue({
       idInput: '', idError: '',
       email: '', pin: '', loginErr: { email: '', pin: '' }, loginMsg: '',
       today: {}, loc: { state: 'idle', lat: null, lng: null, acc: null },
-      clockReq: null, toast: { msg: '', kind: 'ok' }, toastTimer: null,
+      queue: loadQueue(), notices: store.get(LS_NOTICE) || [], online: navigator.onLine !== false, flushing: false, timer: null,
+      toast: { msg: '', kind: 'ok' }, toastTimer: null,
       month: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
       history: [], histBusy: false, histErr: '',
       detail: null, photos: {}, photoState: {}, photoMsg: {}, lastFocus: null
@@ -405,7 +431,18 @@ new Vue({
     firstName() { return ((this.session && this.session.nama) || '').split(' ')[0]; },
     initials() { return ((this.session && this.session.nama) || '?').split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase(); },
     todayLabel() { const d = new Date(); return HARI[d.getDay()] + ', ' + d.getDate() + ' ' + BULAN[d.getMonth()] + ' ' + d.getFullYear(); },
-    stage() { return !this.today.jam_masuk ? 0 : (!this.today.jam_pulang ? 1 : 2); },
+    mine() { const s = this.session; return s ? this.queue.filter((q) => q.id_app === this.tenant.id_app && q.pegawai_id === s.pegawai_id) : []; },
+    pendClock() { return this.mine.filter((q) => q.phase === 'clock'); },
+    // Tampilan hari ini = data server + absen yang masih antre di HP (supaya pegawai langsung melihat hasilnya)
+    view() {
+      const t = Object.assign({}, this.today);
+      this.pendClock.forEach((q) => {
+        if (q.tipe === 'masuk' && !t.jam_masuk) { t.jam_masuk = q.jam; t.tmpMasuk = true; }
+        if (q.tipe === 'pulang') { t.jam_pulang = q.jam; t.tmpPulang = true; }
+      });
+      return t;
+    },
+    stage() { return !this.view.jam_masuk ? 0 : (!this.view.jam_pulang ? 1 : 2); },
     pill() { return [{ t: 'Belum absen masuk', bg: '#E4EAE8', fg: '#2F3F3B' }, { t: 'Sedang bekerja', bg: '#E1F2EF', fg: '#0B5B54' }, { t: 'Selesai hari ini', bg: '#E6F4EA', fg: '#1B5E34' }][this.stage]; },
     btnLabel() { return this.busy ? 'Menyimpan…' : ['Absen Masuk', 'Absen Pulang', 'Absen Pulang Lagi (Lembur)'][this.stage]; },
     btnDisabled() { return this.busy || this.loc.state === 'loading'; },
@@ -429,6 +466,12 @@ new Vue({
   mounted() {
     if (this.screen === 'id') this.$nextTick(() => this.$refs.idapp && this.$refs.idapp.focus());
     if (this.screen === 'main') this.enterMain();
+    // Antrean dicoba tiap beberapa detik; saat sinyal kembali atau aplikasi dibuka lagi, dicoba dengan jeda acak
+    // supaya ribuan HP yang tersambung kembali bersamaan tidak menyerbu server di detik yang sama.
+    this.timer = setInterval(() => this.flush(false), 4000);
+    window.addEventListener('online', () => { this.online = true; this.flushSoon(); });
+    window.addEventListener('offline', () => { this.online = false; });
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') this.flushSoon(); });
     this.$watch('idInput', () => { this.idError = ''; });
     this.$watch('email', () => { this.loginErr.email = ''; this.loginMsg = ''; });
     this.$watch('pin', () => { this.loginErr.pin = ''; this.loginMsg = ''; });
@@ -455,7 +498,7 @@ new Vue({
       store.set(LS_TENANT, this.tenant);
       this.screen = 'login'; this.$nextTick(() => this.$refs.email && this.$refs.email.focus());
     },
-    gantiKantor() { store.del(LS_TENANT); store.del(LS_SESSION); this.tenant = {}; this.session = null; this.idInput = ''; this.screen = 'id'; this.$nextTick(() => this.$refs.idapp.focus()); },
+    gantiKantor() { if (this.pendClock.length && !window.confirm('Ada absen yang belum terkirim. Absen tetap tersimpan di HP dan terkirim setelah Anda kembali ke kantor ini. Lanjut ganti kantor?')) return; store.del(LS_TENANT); store.del(LS_SESSION); this.tenant = {}; this.session = null; this.idInput = ''; this.screen = 'id'; this.$nextTick(() => this.$refs.idapp.focus()); },
 
     // --- engine
     // Kirim ke engine milik kantor ini. Bila engine SIBUK atau tidak menjawab, minta engine
@@ -492,10 +535,10 @@ new Vue({
       this.session = { token: r.token, nama: r.nama, pegawai_id: r.pegawai_id };
       store.set(LS_SESSION, this.session); this.pin = ''; this.screen = 'main'; this.tab = 'absen'; this.enterMain();
     },
-    logout() { store.del(LS_SESSION); this.session = null; this.today = {}; this.history = []; this.email = ''; this.screen = 'login'; this.$nextTick(() => this.$refs.email && this.$refs.email.focus()); },
+    logout(ev) { if (ev && ev.type === 'click' && this.pendClock.length && !window.confirm('Ada absen yang belum terkirim. Absen tetap tersimpan di HP dan dikirim setelah Anda login lagi. Keluar sekarang?')) return; store.del(LS_SESSION); this.session = null; this.today = {}; this.history = []; this.email = ''; this.screen = 'login'; this.$nextTick(() => this.$refs.email && this.$refs.email.focus()); },
 
     // --- beranda
-    async enterMain() { this.getLocation(); await this.loadToday(); },
+    async enterMain() { this.getLocation(); this.flush(true); await this.loadToday(); },
     async loadToday() {
       const r = await this.engine({ action: 'today' });
       if (r.ok) this.today = r;
@@ -515,24 +558,81 @@ new Vue({
       if (this.loc.state !== 'ok') { this.say('Lokasi belum siap. Aktifkan GPS lalu coba lagi.', 'bad'); this.getLocation(); return; }
       this.$refs.selfie.value = ''; this.$refs.selfie.click(); // buka kamera depan; lanjut di onSelfie
     },
+    // Absen = simpan dulu di HP (jam saat tombol ditekan), baru kirim. Pegawai tidak menunggu server
+    // dan tidak rugi bila sinyal hilang: antrean diulang otomatis sampai berhasil.
     async onSelfie(ev) {
       const f = ev.target.files && ev.target.files[0]; if (!f) return;
       this.busy = true;
       try {
-        const now = new Date(), L = this.loc;
+        const now = new Date(), L = this.loc, tipe = this.stage === 0 ? 'masuk' : 'pulang';
         const foto = await shrink(f, 480, [
           HARI[now.getDay()] + ', ' + now.getDate() + ' ' + BULAN[now.getMonth()].slice(0, 3) + ' ' + now.getFullYear() + '  ' + pad(now.getHours()) + '.' + pad(now.getMinutes()) + '.' + pad(now.getSeconds()),
           'Lat ' + L.lat.toFixed(6) + ', Lng ' + L.lng.toFixed(6) + '  (±' + Math.round(L.acc) + ' m)',
           this.tenant.nama_kantor + ' · ' + (this.session.nama || '')
         ]);
-        // request_id dipertahankan sampai berhasil, supaya ketukan ulang tidak membuat catatan ganda
-        const tipe = this.stage === 0 ? 'masuk' : 'pulang';
-        if (!this.clockReq || this.clockReq.tipe !== tipe) this.clockReq = { tipe, id: rid() };
-        const r = await this.engine({ action: 'clock', tipe, request_id: this.clockReq.id, lat: this.loc.lat, lng: this.loc.lng, akurasi: this.loc.acc, foto }, 90000);
-        if (r.ok) { this.today = r; this.clockReq = null; this.say(tipe === 'masuk' ? 'Absen masuk tercatat.' : 'Absen pulang tercatat.'); }
-        else this.say(r.message || 'Absen gagal. Coba lagi.', 'bad');
+        this.queue.push({ id: rid(), id_app: this.tenant.id_app, pegawai_id: this.session.pegawai_id, tipe, lat: L.lat, lng: L.lng, acc: L.acc,
+          ts: now.getTime(), jam: hm(now), foto, phase: 'clock', state: 'tunggu', tries: 0, next: 0 });
+        this.saveQueue();
+        this.say((tipe === 'masuk' ? 'Absen masuk' : 'Absen pulang') + ' ' + this.fmt(hm(now)) + ' tersimpan. Sedang dikirim…');
+        this.flush(true);
       } catch (e) { this.say('Foto tidak bisa diproses. Coba ambil ulang.', 'bad'); }
       this.busy = false;
+    },
+
+    // --- antrean kirim
+    saveQueue() {
+      for (let i = 0; i < this.queue.length + 1; i++) {
+        try { localStorage.setItem(LS_QUEUE, JSON.stringify(this.queue)); return; } catch (e) { /* penuh/diblokir */ }
+        // Penyimpanan penuh: buang foto tertua dulu. Jam dan lokasi lebih penting daripada foto.
+        const q = this.queue.filter((x) => x.foto)[0]; if (!q) return;
+        q.foto = ''; if (q.phase === 'foto') this.queue.splice(this.queue.indexOf(q), 1);
+      }
+    },
+    flushSoon() { setTimeout(() => this.flush(false), Math.random() * 3000); },
+    backoff(q) { q.tries++; q.state = 'tunggu'; q.next = Date.now() + Math.min(120000, 5000 * Math.pow(2, Math.min(q.tries, 5))) * (0.7 + Math.random() * 0.6); },
+    qText(q) {
+      const nama = (q.tipe === 'masuk' ? 'Masuk ' : 'Pulang ') + this.fmt(q.jam) + ': ';
+      if (q.phase === 'foto') return nama + 'tercatat, foto menyusul';
+      return nama + (q.state === 'kirim' ? 'sedang dikirim…' : (q.state === 'login' ? 'login ulang untuk mengirim' : 'menunggu jaringan, dicoba otomatis'));
+    },
+    notice(msg) { this.notices.push({ id: rid(), msg }); store.set(LS_NOTICE, this.notices); },
+    dismissNotice(id) { this.notices = this.notices.filter((n) => n.id !== id); store.set(LS_NOTICE, this.notices); },
+    async flush(force) {
+      if (this.flushing || !this.session) return;
+      this.flushing = true;
+      try {
+        const items = this.mine.slice().sort((a, b) => a.ts - b.ts);
+        let clockBlocked = false;
+        for (let i = 0; i < items.length; i++) {
+          const q = items[i];
+          if (q.phase === 'clock' && clockBlocked) continue; // urutan dijaga: masuk harus tiba sebelum pulang
+          if (!force && q.next > Date.now()) { if (q.phase === 'clock') clockBlocked = true; continue; }
+          q.state = 'kirim';
+          const r = q.phase === 'clock'
+            ? await this.engine({ action: 'clock', tipe: q.tipe, request_id: q.id, lat: q.lat, lng: q.lng, akurasi: q.acc, tunda_ms: Math.max(0, Date.now() - q.ts) }, 30000)
+            : await this.engine({ action: 'upload_foto', tipe: q.tipe, tanggal: q.tanggal, request_id: q.id, foto: q.foto }, 60000);
+          if (!this.session) break; // logout selama mengirim
+          if (r.ok) {
+            if (q.phase === 'clock') {
+              this.today = r; q.tanggal = r.tanggal; q.tries = 0; q.next = 0;
+              this.say((q.tipe === 'masuk' ? 'Absen masuk' : 'Absen pulang') + ' ' + this.fmt(q.jam) + ' berhasil dikirim.' + (r.tertunda ? ' Jam sesuai saat Anda menekan tombol.' : ''));
+              if (q.foto) { q.phase = 'foto'; this.saveQueue(); i--; continue; } // foto langsung menyusul setelah jam tercatat
+              this.queue.splice(this.queue.indexOf(q), 1);
+            } else this.queue.splice(this.queue.indexOf(q), 1);
+          } else if (RETRY_CODES.indexOf(r.code) !== -1 || (q.phase === 'foto' && r.code === 'ABSEN_TIDAK_ADA' && q.tries < 6)) {
+            this.backoff(q); if (q.phase === 'clock') clockBlocked = true;
+          } else if (r.code === 'SESI_HABIS') {
+            q.state = 'login'; this.saveQueue();
+            this.logout(); this.loginMsg = 'Sesi berakhir. Login lagi, absen Anda yang tersimpan akan dikirim otomatis.'; break;
+          } else { // ditolak server (mis. di luar radius): tidak diulang, pegawai diberi tahu dan tidak hilang diam-diam
+            this.queue.splice(this.queue.indexOf(q), 1);
+            this.notice(q.phase === 'clock'
+              ? (q.tipe === 'masuk' ? 'Absen masuk ' : 'Absen pulang ') + this.fmt(q.jam) + ' tidak diterima: ' + (r.message || 'ditolak server') + ' Hubungi admin bila perlu.'
+              : 'Foto absen ' + q.tipe + ' ' + this.fmt(q.jam) + ' tidak bisa diunggah, tetapi absennya sudah tercatat.');
+          }
+          this.saveQueue();
+        }
+      } finally { this.flushing = false; this.saveQueue(); }
     },
 
     // --- riwayat
