@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DashboardEngine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F2F5F4;--card:#fff;--line:#DDE5E2;--ink:#10211E;--mute:#4F5F5B;--faint:#8A9995;--brand:#0F766E;--brand-d:#0B5B54;--brand-l:#E1F2EF;--ok:#1B5E34;--ok-l:#E6F4EA;--warn:#8A4B00;--warn-l:#FDEDD3;--bad:#A12B22;--bad-l:#FCE8E6;--c1:#0D9488;--c2:#C2410C;--c3:#B45309}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:15px;-webkit-text-size-adjust:100%}
+[v-cloak]{display:none}
+button,input,select{font-family:inherit;font-size:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+h1{margin:0;font-size:24px;font-weight:800;letter-spacing:-.02em}
+h2{margin:0 0 12px;font-size:16px;font-weight:700}
+.wrap{max-width:1040px;margin:0 auto;padding:20px 16px 48px}
+.lead{margin:4px 0 0;color:var(--mute);font-size:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border:0;border-radius:12px;background:var(--brand);color:#fff;font-weight:700;cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--brand-d)}
+.btn.sec{background:#fff;color:var(--brand-d);border:1px solid #9AA9A5}
+.btn[disabled]{background:#CBD7D3;color:#2F3F3B;cursor:not-allowed}
+.inp{width:100%;height:46px;padding:0 12px;border:1px solid #9AA9A5;border-radius:10px;background:#fff}
+select.inp{width:auto;height:44px}
+label{display:block;font-size:13.5px;font-weight:700;margin:0 0 6px}
+.err{margin:8px 0 0;font-size:13.5px;font-weight:600;color:var(--bad)}.err:empty{display:none}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin-top:16px}
+.login{max-width:400px;margin:12vh auto 0}
+.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.tools{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.chk{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;min-height:44px}
+.chk input{width:20px;height:20px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:16px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.kpi b{display:block;font-size:26px;font-weight:800;letter-spacing:-.02em}
+.kpi span{font-size:13px;color:var(--mute);font-weight:600}
+.kpi.bad b{color:var(--bad)}.kpi.warn b{color:var(--warn)}
+.alert{padding:12px 14px;border-radius:12px;font-size:14px;font-weight:600;line-height:1.45;margin-top:10px}
+.alert.warn{background:var(--warn-l);color:var(--warn)}
+.alert.ok{background:var(--ok-l);color:var(--ok)}
+.alert.info{background:var(--brand-l);color:var(--brand-d)}
+.alert ul{margin:0;padding-left:18px}
+.tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:14px;min-width:760px}
+th{font-size:12.5px;text-align:left;color:var(--mute);font-weight:700;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:11px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12.5px;font-weight:700}
+.chip i{width:8px;height:8px;border-radius:50%;background:currentColor}
+.chip.LEGA{background:var(--ok-l);color:var(--ok)}.chip.TINGGI{background:var(--warn-l);color:var(--warn)}
+.chip.SIBUK{background:var(--bad-l);color:var(--bad)}.chip.MATI{background:#E4EAE8;color:#2F3F3B}.chip.NONAKTIF{background:#EEF1F0;color:var(--mute)}
+.meter{display:inline-block;vertical-align:middle;width:70px;height:8px;border-radius:99px;background:#E4EAE8;overflow:hidden;margin-right:8px}
+.meter u{display:block;height:100%;background:var(--c1)}
+.meter.hi u{background:var(--c3)}.meter.full u{background:var(--bad)}
+.chartbox svg{width:100%;height:auto;display:block}
+.chartbox text{font-family:inherit;font-size:11px;fill:var(--mute)}
+@media (max-width:640px){.chartbox text{font-size:19px}}
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:13px;font-weight:600;color:var(--mute);margin-bottom:8px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.empty{padding:22px;text-align:center;color:var(--mute)}
+details summary{cursor:pointer;font-weight:700;color:var(--brand-d);min-height:44px;display:flex;align-items:center}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</head>
+<body>
+<div id="app" v-cloak>
+
+  <main v-if="!key" class="wrap login">
+    <h1>DashboardEngine</h1>
+    <p class="lead">Pantau kinerja Engine Absensi. Hanya untuk pemilik platform.</p>
+    <form class="card" @submit.prevent="masuk" novalidate>
+      <div v-if="demo" class="alert info" style="margin:0 0 14px">Mode contoh: data di bawah dibuat otomatis. Isi MASTER_URL di script untuk memakai data asli.</div>
+      <label for="kunci">Kunci pemilik</label>
+      <input id="kunci" ref="kunci" class="inp" type="password" autocomplete="current-password" v-model="input" :aria-invalid="!!loginErr">
+      <p class="err" id="loginErr" role="alert">{{ loginErr }}</p>
+      <button id="masukBtn" class="btn" style="width:100%;margin-top:14px" type="submit" :disabled="busy">{{ busy ? 'Memeriksa…' : 'Buka dashboard' }}</button>
+      <p class="lead" style="font-size:13px;margin-top:12px">Kunci ada di sheet CONFIG masterAbsen, baris <b>owner_key</b>.</p>
+    </form>
+  </main>
+
+  <main v-else class="wrap">
+    <div class="top">
+      <div>
+        <h1>DashboardEngine</h1>
+        <p class="lead" id="updated">{{ data ? 'Diperbarui ' + jamLokal(data.dibuat) + ' · data ' + jam + ' jam terakhir' : 'Memuat…' }}</p>
+      </div>
+      <div class="tools">
+        <label class="sr" for="rentang">Rentang waktu</label>
+        <select id="rentang" class="inp" v-model.number="jam" @change="muat">
+          <option :value="6">6 jam</option><option :value="24">24 jam</option><option :value="72">72 jam</option>
+        </select>
+        <label class="chk"><input id="auto" type="checkbox" v-model="auto"> Perbarui otomatis</label>
+        <button id="muatBtn" class="btn sec" type="button" :disabled="busy" @click="muat">{{ busy ? 'Memuat…' : 'Muat ulang' }}</button>
+        <button id="keluarBtn" class="btn sec" type="button" @click="keluar">Keluar</button>
+      </div>
+    </div>
+    <div v-if="demo" class="alert info">Mode contoh: data dibuat otomatis, bukan data asli.</div>
+    <p v-if="loadErr" class="err" id="loadErr" role="alert" style="font-size:14px">{{ loadErr }}</p>
+
+    <template v-if="data">
+      <div class="kpis">
+        <div class="kpi"><b id="kEngine">{{ data.ringkasan.lega + data.ringkasan.tinggi }}<small style="font-size:15px;color:var(--mute)"> / {{ data.ringkasan.engine }}</small></b><span>Engine aktif</span></div>
+        <div class="kpi" :class="{bad: data.ringkasan.sibuk > 0}"><b>{{ data.ringkasan.sibuk }}</b><span>Engine sibuk</span></div>
+        <div class="kpi" :class="{bad: data.ringkasan.mati > 0 && matiMelayani}"><b>{{ data.ringkasan.mati }}</b><span>Engine mati</span></div>
+        <div class="kpi"><b>{{ n(data.ringkasan.kantor) }}</b><span>Kantor terlayani</span></div>
+        <div class="kpi"><b id="kReq">{{ n(data.ringkasan.req) }}</b><span>Permintaan</span></div>
+        <div class="kpi" :class="{warn: errPct >= 2}"><b>{{ errPct }}%</b><span>Error</span></div>
+        <div class="kpi" :class="{warn: data.ringkasan.sibuk_ditolak > 0}"><b>{{ n(data.ringkasan.sibuk_ditolak) }}</b><span>Ditolak karena penuh</span></div>
+        <div class="kpi"><b>{{ n(data.ringkasan.tertunda) }}</b><span>Absen tertunda (dari HP)</span></div>
+      </div>
+
+      <div v-if="data.peringatan.length" id="peringatan" class="alert warn" role="status"><ul><li v-for="w in data.peringatan" :key="w">{{ w }}</li></ul></div>
+      <div v-else id="aman" class="alert ok">Semua engine normal. Tidak ada peringatan.</div>
+      <div class="alert info">Semua engine memakai satu akun Google, sehingga batas Apps Script (sekitar 30 eksekusi bersamaan per akun) berlaku untuk semuanya. Bila semua engine sering SIBUK bersamaan, menambah engine tidak menolong; yang perlu ditambah adalah akun engine.</div>
+
+      <section class="card" aria-labelledby="h-engine">
+        <h2 id="h-engine">Kondisi engine</h2>
+        <div v-if="!data.engine.length" class="empty">Belum ada engine terdaftar. Jalankan setupEngine di tiap engine.</div>
+        <div v-else class="tablewrap"><table id="tabelEngine">
+          <thead><tr><th>Engine</th><th>Kondisi</th><th>Beban</th><th class="n">Permintaan</th><th class="n">Puncak/menit</th><th class="n">Error</th><th class="n">p95</th><th class="n">Ditolak</th><th class="n">Tertunda</th><th class="n">Kantor</th><th>Laporan terakhir</th></tr></thead>
+          <tbody><tr v-for="e in data.engine" :key="e.engine_id">
+            <td><b>{{ e.engine_id }}</b><div style="font-size:12px;color:var(--mute)">v{{ e.version || '?' }}</div></td>
+            <td><span class="chip" :class="e.kondisi"><i></i>{{ kondisiLabel[e.kondisi] }}</span></td>
+            <td><span class="meter" :class="{hi: e.load_pct >= 70, full: e.load_pct >= 100}"><u :style="{width: e.load_pct + '%'}"></u></span>{{ e.load_pct }}%</td>
+            <td class="n">{{ n(e.req) }}</td><td class="n">{{ n(e.puncak_per_menit) }}</td>
+            <td class="n">{{ e.err_pct }}%</td><td class="n">{{ e.lat_p95_maks ? n(e.lat_p95_maks) + ' ms' : '–' }}</td>
+            <td class="n">{{ n(e.sibuk) }}</td><td class="n">{{ n(e.tertunda) }}</td><td class="n">{{ e.kantor }}</td>
+            <td>{{ lalu(e.laporan_terakhir_detik) }}</td>
+          </tr></tbody>
+        </table></div>
+      </section>
+
+      <section class="card" aria-labelledby="h-jam">
+        <h2 id="h-jam">Permintaan per jam</h2>
+        <div v-if="!chart.bars.length" class="empty">Belum ada data kinerja pada rentang ini.</div>
+        <template v-else>
+          <div class="legend"><span><i style="background:var(--c1)"></i>Berhasil</span><span><i style="background:var(--c3)"></i>Ditolak penuh</span><span><i style="background:var(--c2)"></i>Error</span></div>
+          <div class="chartbox"><svg id="grafik" :view-box.camel="'0 0 ' + chart.W + ' ' + chart.H" role="img" aria-labelledby="h-jam">
+            <line v-for="g in chart.grid" :key="g.y" :x1="chart.L" :x2="chart.W" :y1="g.y" :y2="g.y" stroke="#DDE5E2"/>
+            <text v-for="g in chart.grid" :key="'t'+g.y" :x="chart.L - 8" :y="g.y + 4" text-anchor="end">{{ g.v }}</text>
+            <g v-for="b in chart.bars" :key="b.jam">
+              <title>{{ b.label }}: {{ b.req }} permintaan, {{ b.sibuk }} ditolak, {{ b.err }} error</title>
+              <rect :x="b.x" :y="b.yOk" :width="chart.bw" :height="b.hOk" fill="#0D9488"/>
+              <rect :x="b.x" :y="b.ySib" :width="chart.bw" :height="b.hSib" fill="#B45309"/>
+              <rect :x="b.x" :y="b.yErr" :width="chart.bw" :height="b.hErr" fill="#C2410C"/>
+              <text v-if="b.show" :x="b.x + chart.bw / 2" :y="chart.H - 6" text-anchor="middle">{{ b.short }}</text>
+            </g>
+          </svg></div>
+          <details><summary>Lihat sebagai tabel</summary>
+            <div class="tablewrap"><table style="min-width:420px"><thead><tr><th>Jam</th><th class="n">Permintaan</th><th class="n">Ditolak penuh</th><th class="n">Error</th></tr></thead>
+            <tbody><tr v-for="b in chart.bars" :key="b.jam"><td>{{ b.label }}</td><td class="n">{{ n(b.req) }}</td><td class="n">{{ n(b.sibuk) }}</td><td class="n">{{ n(b.err) }}</td></tr></tbody></table></div>
+          </details>
+        </template>
+      </section>
+    </template>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.min.js"></script>
+<script>
+'use strict';
+// URL web app masterAbsen. Selama belum diisi, halaman jalan dalam mode contoh.
+const MASTER_URL = 'https://script.google.com/macros/s/AKfycbxdv5vVFcDJHmAWS2el5px-TC3sGQ2qrHkCkJqKvz1ERHzQHLQzdpOtGnMcGwFskLpmmw/exec';
+const DEMO = !/^https:\/\/script\.google(usercontent)?\.com\//.test(MASTER_URL);
+const SS = {
+  get(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { sessionStorage.setItem(k, v); } catch (e) {} },
+  del(k) { try { sessionStorage.removeItem(k); } catch (e) {} }
+};
+const pad = (x) => String(x).padStart(2, '0');
+
+async function post(body, ms) {
+  const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), ms || 30000);
+  try {
+    const res = await fetch(MASTER_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body), signal: ctl.signal });
+    if (!res.ok) throw new Error('http');
+    return await res.json();
+  } catch (e) { return { ok: false, code: 'JARINGAN', message: e.name === 'AbortError' ? 'Server terlalu lama menjawab.' : 'Tidak bisa terhubung ke masterAbsen.' }; }
+  finally { clearTimeout(tm); }
+}
+
+// Data contoh agar tampilan bisa dicoba tanpa server.
+function demoStats(hours) {
+  const now = Date.now(), per = [], eng = [];
+  for (let i = hours - 1; i >= 0; i--) {
+    const t = new Date(Math.floor((now - i * 3600000) / 3600000) * 3600000), h = t.getHours() + 0;
+    const peak = h === 7 || h === 8 ? 900 : (h === 16 || h === 17 ? 500 : 60 + (h * 7) % 40);
+    per.push({ jam: t.toISOString(), req: peak, err: Math.round(peak * 0.004), sibuk: h === 7 ? 38 : 0 });
+  }
+  const kond = ['TINGGI', 'LEGA', 'LEGA', 'SIBUK', 'MATI'];
+  for (let i = 1; i <= 5; i++) {
+    const k = kond[i - 1], req = k === 'MATI' ? 0 : 1200 * (6 - i);
+    eng.push({ engine_id: 'ENGINE-' + i, version: '1.1.0', status: 'ACTIVE', load_pct: ({ TINGGI: 78, LEGA: 22, SIBUK: 100, MATI: 0 })[k] || 15, laporan_terakhir_detik: k === 'MATI' ? 5400 : 120 * i,
+      sibuk_sekarang: k === 'SIBUK', req, err: Math.round(req * 0.003), sibuk: k === 'SIBUK' ? 38 : 0, tertunda: 4 * (6 - i), lat_p95_maks: 900 + i * 350, lat_maks: 3000, puncak_per_menit: Math.round(req / 90), kantor: k === 'MATI' ? 0 : 6 - i, kondisi: k,
+      lat_avg: 600 + i * 120, err_pct: req ? 0.3 : 0 });
+  }
+  const sum = { engine: 5, lega: 2, tinggi: 1, sibuk: 1, mati: 1, nonaktif: 0, kantor: 14, req: 0, err: 0, sibuk_ditolak: 38, tertunda: 0 };
+  eng.forEach((e) => { sum.req += e.req; sum.err += e.err; sum.tertunda += e.tertunda; });
+  return { ok: true, jam: hours, dibuat: new Date().toISOString(), ringkasan: sum, engine: eng, per_jam: per, peringatan: ['ENGINE-4 menolak 38 permintaan karena penuh.', 'ENGINE-5 tidak melapor lebih dari 1 jam (tidak melayani kantor).'] };
+}
+
+new Vue({
+  el: '#app',
+  data() {
+    return { demo: DEMO, key: SS.get('owner_key') || '', input: '', loginErr: '', busy: false, loadErr: '', data: null, jam: 24, auto: true, timer: null,
+      kondisiLabel: { LEGA: 'Lega', TINGGI: 'Tinggi', SIBUK: 'Sibuk', MATI: 'Tidak melapor', NONAKTIF: 'Nonaktif' } };
+  },
+  computed: {
+    errPct() { const s = this.data.ringkasan; return s.req > 0 ? Math.round(s.err / s.req * 1000) / 10 : 0; },
+    matiMelayani() { return this.data.engine.some((e) => e.kondisi === 'MATI' && e.kantor > 0); },
+    chart() {
+      const rows = (this.data && this.data.per_jam) || [], W = 720, H = 230, L = 66, T = 10, B = 28, ph = H - T - B;
+      if (!rows.length) return { bars: [] };
+      const max = Math.max.apply(null, rows.map((r) => r.req).concat([1])), step = max <= 10 ? 2 : Math.pow(10, Math.floor(Math.log10(max))) / (max / Math.pow(10, Math.floor(Math.log10(max))) < 2.5 ? 2 : 1);
+      const top = Math.ceil(max / step) * step, slot = (W - L) / rows.length, bw = Math.max(3, slot * 0.7), every = Math.ceil(rows.length / 12);
+      const y = (v) => T + ph - (v / top) * ph, grid = [];
+      for (let v = 0; v <= top; v += step) grid.push({ v: this.n(v), y: y(v) });
+      const bars = rows.map((r, i) => {
+        const ok = Math.max(0, r.req - r.err - r.sibuk), d = new Date(r.jam), x = L + i * slot + (slot - bw) / 2;
+        const hOk = ok / top * ph, hSib = r.sibuk / top * ph, hErr = r.err / top * ph;
+        return { jam: r.jam, x, req: r.req, err: r.err, sibuk: r.sibuk, hOk, hSib, hErr, yOk: T + ph - hOk, ySib: T + ph - hOk - hSib, yErr: T + ph - hOk - hSib - hErr,
+          label: pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + ' ' + pad(d.getHours()) + '.00', short: pad(d.getHours()) + '.00', show: i % every === 0 };
+      });
+      return { W, H, L, bw, grid, bars };
+    }
+  },
+  mounted() {
+    if (this.key) this.muat(); else this.$nextTick(() => this.$refs.kunci && this.$refs.kunci.focus());
+    this.timer = setInterval(() => { if (this.key && this.auto && !this.busy && document.visibilityState === 'visible') this.muat(true); }, 60000);
+  },
+  methods: {
+    n(v) { return Number(v || 0).toLocaleString('id-ID'); },
+    jamLokal(iso) { const d = new Date(iso); return pad(d.getHours()) + '.' + pad(d.getMinutes()); },
+    lalu(s) {
+      if (s === null || s === undefined) return 'belum pernah';
+      if (s < 90) return s + ' dtk lalu'; if (s < 5400) return Math.round(s / 60) + ' mnt lalu';
+      if (s < 172800) return Math.round(s / 3600) + ' jam lalu'; return Math.round(s / 86400) + ' hari lalu';
+    },
+    async fetchStats(key) { return DEMO ? (key ? demoStats(this.jam) : { ok: false, message: 'Kunci pemilik salah.' }) : post({ action: 'engine_stats', owner_key: key, hours: this.jam }); },
+    async masuk() {
+      this.loginErr = '';
+      if (!this.input.trim()) { this.loginErr = 'Kunci pemilik wajib diisi.'; this.$refs.kunci.focus(); return; }
+      this.busy = true;
+      const r = await this.fetchStats(this.input.trim());
+      this.busy = false;
+      if (!r.ok) { this.loginErr = r.message || 'Gagal masuk.'; return; }
+      this.key = this.input.trim(); SS.set('owner_key', this.key); this.input = ''; this.data = r;
+    },
+    keluar() { SS.del('owner_key'); this.key = ''; this.data = null; this.$nextTick(() => this.$refs.kunci && this.$refs.kunci.focus()); },
+    async muat(quiet) {
+      if (this.busy) return;
+      this.busy = true; if (quiet !== true) this.loadErr = '';
+      const r = await this.fetchStats(this.key);
+      this.busy = false;
+      if (r.ok) { this.data = r; this.loadErr = ''; return; }
+      if (r.code === 'DITOLAK') { this.keluar(); this.loginErr = 'Kunci pemilik tidak berlaku. Masuk lagi.'; return; }
+      this.loadErr = (r.message || 'Gagal memuat data.') + (this.data ? ' Menampilkan data terakhir.' : '');
+    }
+  }
+});
+</script>
+</body>
+</html>
