@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
 <style>
 :root{--bg:#F2F5F4;--card:#fff;--line:#DDE5E2;--ink:#10211E;--mute:#4F5F5B;--faint:#8A9995;--brand:#0F766E;--brand-d:#0B5B54;--brand-l:#E1F2EF;--ok:#1B5E34;--ok-l:#E6F4EA;--warn:#8A4B00;--warn-l:#FDEDD3;--bad:#A12B22;--bad-l:#FCE8E6;--c1:#0D9488;--c2:#C2410C;color-scheme:light}
 *{box-sizing:border-box}
@@ -29,6 +30,9 @@ h2{margin:0;font-size:16px;font-weight:700}
 .btn.danger:hover{background:var(--bad-l)}
 .btn.sm{min-height:36px;padding:0 12px;font-size:13.5px;border-radius:10px}
 .btn[disabled]{background:#CBD7D3;color:#2F3F3B;border-color:transparent;cursor:not-allowed}
+.seg{display:flex;gap:6px;margin:0 0 16px;flex-wrap:wrap}
+.seg button{min-height:40px;padding:0 16px;border:1px solid #9AA9A5;border-radius:999px;background:#fff;font-weight:700;cursor:pointer;color:var(--ink)}
+.seg button[aria-pressed=true]{background:var(--brand-l);border-color:var(--brand);color:var(--brand-d)}
 .link{background:none;border:0;color:var(--brand-d);font-weight:700;cursor:pointer;padding:8px 4px;min-height:36px}
 label,.lbl{display:block;font-size:13.5px;font-weight:700;margin:0 0 6px}
 .inp{width:100%;height:44px;padding:0 12px;border:1px solid #9AA9A5;border-radius:10px;background:#fff}
@@ -108,6 +112,13 @@ tbody tr:hover td{background:#FAFCFB}
 .tip{position:absolute;pointer-events:none;background:#10211E;color:#fff;border-radius:10px;padding:8px 10px;font-size:12.5px;line-height:1.5;transform:translate(-50%,-100%);white-space:nowrap;z-index:3;margin-top:-6px}
 .tip b{display:block}
 
+/* peta posisi */
+#peta{height:420px;background:#E4EAE8}
+.leaflet-container{font-family:inherit}
+.leaflet-tooltip.pl{font-weight:700;font-size:12px;padding:2px 6px;border-radius:6px;border:1px solid #0B5B54;color:#0B5B54}
+.leaflet-tooltip.pl::before{display:none}
+@media (max-width:640px){#peta{height:340px}}
+.tag.me{background:var(--brand-l);color:var(--brand-d)}
 /* modal */
 .modal{position:fixed;inset:0;background:rgba(16,33,30,.55);z-index:20;display:flex;align-items:center;justify-content:center;padding:16px}
 .sheet{width:100%;max-width:560px;max-height:92vh;overflow:auto;background:var(--bg);border-radius:20px;padding:20px 22px 22px}
@@ -265,10 +276,10 @@ figure.ph figcaption span{color:var(--mute);font-variant-numeric:tabular-nums}
           <div v-else class="tw"><table id="hadirTabel"><caption class="sr">Kehadiran pada tanggal terpilih</caption>
             <thead><tr><th scope="col">Nama</th><th scope="col">Masuk</th><th scope="col">Pulang</th><th scope="col">Status</th><th scope="col">Keterangan</th><th scope="col" class="num">Lembur</th><th scope="col" class="noprint">Foto</th></tr></thead>
             <tbody><tr v-for="r in dash.kehadiran" :key="r.pegawai_id">
-              <td><b>{{ r.nama }}</b><div style="font-size:12.5px;color:var(--mute)">{{ r.jabatan }}</div></td><td>{{ fmt(r.jam_masuk) }}</td><td>{{ fmt(r.jam_pulang) }}</td>
+              <td><b>{{ r.nama }}</b><div style="font-size:12.5px;color:var(--mute)">{{ r.jabatan }}</div><div v-if="r.lokasi_masuk" style="font-size:12.5px;color:var(--mute)">{{ r.lokasi_masuk }}</div></td><td>{{ fmt(r.jam_masuk) }}</td><td>{{ fmt(r.jam_pulang) }}</td>
               <td><span class="tag" :class="r.status === 'TERLAMBAT' ? 'late' : 'ok'">{{ r.status === 'TERLAMBAT' ? 'Terlambat' : 'Tepat waktu' }}</span></td>
-              <td>{{ r.keterangan || '–' }}</td><td class="num">{{ r.lembur_menit ? fmtMenit(r.lembur_menit) : '–' }}</td>
-              <td class="noprint"><button class="btn sec sm" type="button" @click="openFoto({tanggal: dash.tanggal, pegawai_id: r.pegawai_id, nama: r.nama, jam_masuk: r.jam_masuk, jam_pulang: r.jam_pulang, foto_masuk: r.foto_masuk, foto_pulang: r.foto_pulang}, $event)">Lihat foto</button></td>
+              <td>{{ r.keterangan || '–' }}</td><td class="num">{{ r.lembur_menit ? fmtMenit(r.lembur_menit) : '–' }}<div v-if="r.larut_tanpa_perintah" class="hint" style="margin:2px 0 0;white-space:normal">larut {{ fmtMenit(r.larut_tanpa_perintah) }}, tanpa perintah</div></td>
+              <td class="noprint"><button class="btn sec sm" type="button" @click="openFoto({tanggal: dash.tanggal, pegawai_id: r.pegawai_id, nama: r.nama, jam_masuk: r.jam_masuk, jam_pulang: r.jam_pulang, foto_masuk: r.foto_masuk, foto_pulang: r.foto_pulang, lokasi_masuk: r.lokasi_masuk, lokasi_pulang: r.lokasi_pulang, alamat_masuk: r.alamat_masuk, alamat_pulang: r.alamat_pulang}, $event)">Lihat foto</button></td>
             </tr></tbody></table></div>
         </div>
       </template>
@@ -314,13 +325,13 @@ figure.ph figcaption span{color:var(--mute);font-variant-numeric:tabular-nums}
           <div v-else class="tw"><table id="rekapTabel"><caption class="sr">Rekap kehadiran per pegawai</caption>
             <thead><tr><th scope="col">Nama</th><th scope="col">Jabatan</th><th scope="col" class="num">Hari kerja</th><th scope="col" class="num">Hadir</th><th scope="col" class="num">Tepat</th><th scope="col" class="num">Terlambat</th><th scope="col" class="num">Tanpa ket.</th><th scope="col" class="num">Dinas luar</th><th scope="col" class="num">ST tanpa absen</th><th scope="col" class="num">Tanpa pulang</th><th scope="col" class="num">Total jam</th><th scope="col" class="num">Lembur</th><th scope="col" class="num">Rata² masuk</th></tr></thead>
             <tbody><tr v-for="r in lap.rekap" :key="r.pegawai_id"><td><b>{{ r.nama }}</b></td><td>{{ r.jabatan || '–' }}</td><td class="num">{{ r.hari_kerja }}</td><td class="num">{{ r.hadir }}</td><td class="num">{{ r.tepat }}</td><td class="num">{{ r.terlambat }}</td><td class="num">{{ r.alpa }}</td><td class="num">{{ r.dinas_luar }}</td><td class="num">{{ r.dinas_tanpa_absen }}</td><td class="num">{{ r.tanpa_pulang }}</td><td class="num">{{ fmtMenit(r.total_menit) }}</td><td class="num">{{ fmtMenit(r.lembur_menit) }}</td><td class="num">{{ fmt(r.rata_jam_masuk) }}</td></tr></tbody></table></div>
-          <p class="hint">“Tanpa ket.” = hari kerja tanpa absen dan tanpa Surat Tugas, tidak termasuk hari libur dan hari sebelum pegawai terdaftar. Lembur dihitung dari jam pulang terakhir dikurangi jam pulang standar.</p>
+          <p class="hint">“Tanpa ket.” = hari kerja tanpa absen dan tanpa Surat Tugas, tidak termasuk hari libur dan hari sebelum pegawai terdaftar. Lembur dihitung dari jam pulang terakhir dikurangi jam pulang standar, hanya pada tanggal yang ada perintah lembur (menu Lembur).</p>
 
           <h2 class="pb" style="margin:22px 0 10px">Rincian harian</h2>
           <div v-if="!lap.detail.length" class="empty" id="detailKosong">Tidak ada data absensi pada rentang ini.</div>
           <div v-else class="tw"><table id="detailTabel"><caption class="sr">Rincian absensi harian</caption>
-            <thead><tr><th scope="col">Tanggal</th><th scope="col">Nama</th><th scope="col">Masuk</th><th scope="col">Pulang</th><th scope="col" class="num">Durasi</th><th scope="col" class="num">Lembur</th><th scope="col">Status</th><th scope="col">Keterangan</th><th scope="col" class="noprint">Foto</th></tr></thead>
-            <tbody><tr v-for="r in lap.detail" :key="r.tanggal + r.pegawai_id"><td>{{ fmtTgl(r.tanggal) }}</td><td>{{ r.nama }}</td><td>{{ fmt(r.jam_masuk) }}</td><td>{{ fmt(r.jam_pulang) }}</td><td class="num">{{ r.durasi_menit === null || r.durasi_menit === undefined ? '–' : fmtMenit(r.durasi_menit) }}</td><td class="num">{{ r.lembur_menit ? fmtMenit(r.lembur_menit) : '–' }}</td><td><span class="tag" :class="!r.jam_masuk ? 'na' : (r.status === 'TERLAMBAT' ? 'late' : 'ok')">{{ !r.jam_masuk ? 'Tidak hadir' : (r.status === 'TERLAMBAT' ? 'Terlambat' : 'Tepat waktu') }}</span></td><td>{{ r.keterangan || '–' }}</td><td class="noprint"><button class="btn sec sm" type="button" @click="openFoto(r, $event)">Foto</button></td></tr></tbody></table></div>
+            <thead><tr><th scope="col">Tanggal</th><th scope="col">Nama</th><th scope="col">Masuk</th><th scope="col">Pulang</th><th scope="col" class="num">Durasi</th><th scope="col" class="num">Lembur</th><th scope="col">Status</th><th scope="col">Keterangan</th><th scope="col">Lokasi</th><th scope="col" class="noprint">Foto</th></tr></thead>
+            <tbody><tr v-for="r in lap.detail" :key="r.tanggal + r.pegawai_id"><td>{{ fmtTgl(r.tanggal) }}</td><td>{{ r.nama }}</td><td>{{ fmt(r.jam_masuk) }}</td><td>{{ fmt(r.jam_pulang) }}</td><td class="num">{{ r.durasi_menit === null || r.durasi_menit === undefined ? '–' : fmtMenit(r.durasi_menit) }}</td><td class="num">{{ r.lembur_menit ? fmtMenit(r.lembur_menit) : '–' }}</td><td><span class="tag" :class="!r.jam_masuk ? 'na' : (r.status === 'TERLAMBAT' ? 'late' : 'ok')">{{ !r.jam_masuk ? 'Tidak hadir' : (r.status === 'TERLAMBAT' ? 'Terlambat' : 'Tepat waktu') }}</span></td><td>{{ r.keterangan || '–' }}</td><td style="white-space:normal;min-width:150px">{{ r.lokasi_masuk || '–' }}<div v-if="r.alamat_masuk" class="hint" style="margin:2px 0 0">{{ r.alamat_masuk }} (perkiraan)</div></td><td class="noprint"><button class="btn sec sm" type="button" @click="openFoto(r, $event)">Foto</button></td></tr></tbody></table></div>
         </div>
       </template>
     </section>
@@ -333,8 +344,8 @@ figure.ph figcaption span{color:var(--mute);font-variant-numeric:tabular-nums}
         <div v-if="pegBusy && !pegawai.length" class="empty">Memuat pegawai…</div>
         <div v-else-if="!pegawai.length" class="empty" id="pegKosong">Belum ada pegawai. Tambahkan pegawai pertama Anda.</div>
         <div v-else class="tw"><table id="pegTabel"><caption class="sr">Daftar pegawai</caption>
-          <thead><tr><th scope="col">ID</th><th scope="col">Nama</th><th scope="col">Email</th><th scope="col">Jabatan</th><th scope="col">Status</th><th scope="col">PIN</th><th scope="col"><span class="sr">Aksi</span></th></tr></thead>
-          <tbody><tr v-for="p in pegawai" :key="p.pegawai_id"><td>{{ p.pegawai_id }}</td><td><b>{{ p.nama }}</b></td><td>{{ p.email }}</td><td>{{ p.jabatan || '–' }}</td>
+          <thead><tr><th scope="col">ID</th><th scope="col">Nama</th><th scope="col">Email</th><th scope="col">Jabatan</th><th scope="col">Lokasi absen</th><th scope="col">Status</th><th scope="col">PIN</th><th scope="col"><span class="sr">Aksi</span></th></tr></thead>
+          <tbody><tr v-for="p in pegawai" :key="p.pegawai_id"><td>{{ p.pegawai_id }}</td><td><b>{{ p.nama }}</b></td><td>{{ p.email }}</td><td>{{ p.jabatan || '–' }}</td><td style="white-space:normal;min-width:120px">{{ lokNama(p.lokasi_ids) }}</td>
             <td><span class="tag" :class="p.status === 'AKTIF' ? 'ok' : 'na'">{{ p.status === 'AKTIF' ? 'Aktif' : 'Nonaktif' }}</span></td>
             <td><span class="tag" :class="p.pin === 'TERPASANG' ? 'ok' : (p.pin === 'MENUNGGU_LOGIN' ? 'run' : 'bad')">{{ ({TERPASANG: 'Terpasang', MENUNGGU_LOGIN: 'Menunggu login pertama', BELUM_ADA: 'Belum ada'})[p.pin] }}</span></td>
             <td><button class="btn sec sm" type="button" @click="openPeg(p, $event)">Ubah</button></td></tr></tbody></table></div>
@@ -356,6 +367,141 @@ figure.ph figcaption span{color:var(--mute);font-variant-numeric:tabular-nums}
       </div>
     </section>
 
+    <!-- ===== LEMBUR ===== -->
+    <section v-show="view === 'lembur'" aria-labelledby="h-lem">
+      <div class="page-h noprint"><div><h1 id="h-lem">Lembur</h1><p class="lead">Catat perintah lembur per tanggal untuk pegawai tertentu. Lembur dihitung dari jam pulang standar sampai absen pulang terakhir, dan hanya bila ada perintah.</p></div><button id="lbAdd" class="btn" type="button" @click="openLbm(null, $event)">+ Catat perintah lembur</button></div>
+      <div class="seg noprint" role="group" aria-label="Tampilan lembur">
+        <button id="lemTabPerintah" type="button" :aria-pressed="lemTab === 'perintah'" @click="lemTab = 'perintah'">Perintah lembur</button>
+        <button id="lemTabLaporan" type="button" :aria-pressed="lemTab === 'laporan'" @click="lemTab = 'laporan'; if (!ll) loadLaporanLembur()">Laporan lembur</button>
+      </div>
+
+      <!-- perintah lembur -->
+      <div v-show="lemTab === 'perintah'">
+        <div v-if="lbErr" class="banner bad" role="alert">{{ lbErr }}</div>
+        <div class="card">
+          <div class="row3" style="align-items:end">
+            <div class="field" style="margin:0"><label for="lbDari">Dari tanggal</label><input id="lbDari" class="inp" type="date" v-model="lbF.dari"></div>
+            <div class="field" style="margin:0"><label for="lbSampai">Sampai tanggal</label><input id="lbSampai" class="inp" type="date" v-model="lbF.sampai"></div>
+            <div><button id="lbMuat" class="btn sec" type="button" :disabled="lbBusy" @click="loadLembur">{{ lbBusy ? 'Memuat…' : 'Muat perintah' }}</button></div>
+          </div>
+          <p class="hint">Perintah boleh dicatat pada hari itu atau beberapa hari sesudahnya. Begitu dicatat, absen larut pegawai pada tanggal itu langsung masuk hitungan lembur. Mencatat perintah berarti lembur disetujui.</p>
+        </div>
+        <div class="card">
+          <div v-if="lbBusy && !lbList.length" class="empty">Memuat perintah lembur…</div>
+          <div v-else-if="!lbList.length" class="empty" id="lbKosong">Belum ada perintah lembur pada rentang ini.</div>
+          <div v-else class="tw"><table id="lbTabel"><caption class="sr">Daftar perintah lembur</caption>
+            <thead><tr><th scope="col">Tanggal</th><th scope="col">Pegawai</th><th scope="col">Catatan</th><th scope="col">Status</th><th scope="col"><span class="sr">Aksi</span></th></tr></thead>
+            <tbody><tr v-for="r in lbList" :key="r.lembur_id"><td>{{ fmtTgl(r.tanggal) }}</td><td><b>{{ r.nama }}</b></td><td style="white-space:normal;min-width:160px">{{ r.catatan || '–' }}</td>
+              <td><span class="tag" :class="r.status === 'AKTIF' ? 'ok' : 'bad'">{{ r.status === 'AKTIF' ? 'Berlaku' : 'Dibatalkan' }}</span></td>
+              <td><button v-if="r.status === 'AKTIF'" class="btn danger sm" type="button" @click="lbStatus(r, 'BATAL')">Batalkan</button><button v-else class="btn sec sm" type="button" @click="lbStatus(r, 'AKTIF')">Aktifkan lagi</button></td></tr></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- laporan lembur -->
+      <div v-show="lemTab === 'laporan'">
+        <div class="card noprint">
+          <div class="row3" style="align-items:end">
+            <div class="field" style="margin:0"><label for="llDari">Dari tanggal</label><input id="llDari" class="inp" type="date" v-model="llF.dari"></div>
+            <div class="field" style="margin:0"><label for="llSampai">Sampai tanggal</label><input id="llSampai" class="inp" type="date" v-model="llF.sampai"></div>
+            <div class="field" style="margin:0"><label for="llPeg">Pegawai</label><select id="llPeg" class="inp" v-model="llF.pegawai_id"><option value="">Semua pegawai</option><option v-for="p in pegawai" :key="p.pegawai_id" :value="p.pegawai_id">{{ p.nama }}</option></select></div>
+          </div>
+          <div class="tools" style="margin-top:14px">
+            <button id="llShow" class="btn" type="button" @click="loadLaporanLembur" :disabled="llBusy"><span v-if="llBusy" class="spin" aria-hidden="true"></span>{{ llBusy ? 'Memuat…' : 'Tampilkan laporan' }}</button>
+            <button class="btn sec" type="button" @click="presetLem('bulan')">Bulan ini</button>
+            <button class="btn sec" type="button" @click="presetLem('lalu')">Bulan lalu</button>
+          </div>
+          <p v-if="llErr" class="err" role="alert" id="llErr">{{ llErr }}</p>
+        </div>
+
+        <template v-if="ll">
+          <div class="card" id="llOut">
+            <div class="print-head"><h1>Laporan Lembur</h1><div>{{ session.nama_kantor }} · Periode {{ fmtTgl(ll.dari) }} s/d {{ fmtTgl(ll.sampai) }}<span v-if="llPegNama"> · {{ llPegNama }}</span></div><div>Dicetak {{ dicetak }} · Jam pulang standar {{ ll.jam_pulang_standar }}, batas minimal lembur {{ ll.lembur_min_menit }} menit</div></div>
+            <div class="card-h noprint">
+              <div><h2>{{ fmtTgl(ll.dari) }} – {{ fmtTgl(ll.sampai) }}</h2><p class="lead">Jam pulang standar {{ ll.jam_pulang_standar }} · batas minimal {{ ll.lembur_min_menit }} menit</p></div>
+              <div class="tools"><button id="llPrint" class="btn sec" type="button" @click="cetak">Cetak / simpan PDF</button><button id="llCsvRekap" class="btn sec" type="button" @click="csvLembur('rekap')">Unduh rekap (CSV)</button><button id="llCsvDetail" class="btn sec" type="button" @click="csvLembur('detail')">Unduh rincian (CSV)</button></div>
+            </div>
+            <div class="kpis" style="margin-bottom:18px">
+              <div class="kpi"><div class="n">{{ ll.total.pegawai }}</div><div class="l">Pegawai lembur</div></div>
+              <div class="kpi"><div class="n">{{ ll.total.hari }}</div><div class="l">Hari lembur</div></div>
+              <div class="kpi"><div class="n" id="llTotal">{{ fmtMenit(ll.total.menit) }}</div><div class="l">Total jam lembur</div></div>
+              <div class="kpi"><div class="n">{{ ll.total.belum_uraian }}</div><div class="l">Uraian belum diisi</div></div>
+              <div class="kpi"><div class="n">{{ ll.total.larut_tanpa_perintah }}</div><div class="l">Larut tanpa perintah</div></div>
+            </div>
+
+            <h2 style="margin-bottom:10px">Rekap per pegawai</h2>
+            <div v-if="!ll.rekap.length" class="empty" id="llKosong">Belum ada lembur yang masuk hitungan pada rentang ini.</div>
+            <div v-else class="tw"><table id="llRekap"><caption class="sr">Rekap lembur per pegawai</caption>
+              <thead><tr><th scope="col">Nama</th><th scope="col">Jabatan</th><th scope="col" class="num">Hari</th><th scope="col" class="num">Total jam lembur</th><th scope="col" class="num">Uraian belum diisi</th></tr></thead>
+              <tbody><tr v-for="r in ll.rekap" :key="r.pegawai_id"><td><b>{{ r.nama }}</b></td><td>{{ r.jabatan || '–' }}</td><td class="num">{{ r.hari }}</td><td class="num">{{ fmtMenit(r.menit) }}</td><td class="num">{{ r.belum_uraian || '–' }}</td></tr></tbody></table></div>
+
+            <h2 class="pb" style="margin:22px 0 10px">Rincian lembur</h2>
+            <div v-if="!ll.detail.length" class="empty">Tidak ada rincian.</div>
+            <div v-else class="tw"><table id="llDetail"><caption class="sr">Rincian lembur harian</caption>
+              <thead><tr><th scope="col">Tanggal</th><th scope="col">Nama</th><th scope="col">Mulai</th><th scope="col">Selesai</th><th scope="col" class="num">Durasi</th><th scope="col">Uraian pekerjaan</th><th scope="col">Status</th><th scope="col" class="noprint"><span class="sr">Aksi</span></th></tr></thead>
+              <tbody><tr v-for="r in ll.detail" :key="r.tanggal + r.pegawai_id"><td>{{ fmtTgl(r.tanggal) }}</td><td><b>{{ r.nama }}</b></td><td>{{ fmt(r.jam_mulai) }}</td><td>{{ fmt(r.jam_selesai) }}</td><td class="num">{{ fmtMenit(r.menit) }}</td>
+                <td style="white-space:normal;min-width:200px">{{ r.uraian || '–' }}<div v-if="r.catatan_perintah" class="hint" style="margin:2px 0 0">Perintah: {{ r.catatan_perintah }}</div></td>
+                <td><span class="tag" :class="({LENGKAP: 'ok', DIISI_ADMIN: 'run', BELUM_DIISI: 'late'})[r.status]">{{ ({LENGKAP: 'Lengkap', DIISI_ADMIN: 'Diisi admin', BELUM_DIISI: 'Uraian belum diisi'})[r.status] }}</span></td>
+                <td class="noprint"><button class="btn sec sm" type="button" @click="openUm(r, $event)">{{ r.uraian ? 'Ubah uraian' : 'Isi uraian' }}</button></td></tr></tbody></table></div>
+          </div>
+
+          <div class="card" id="llLarut">
+            <div class="card-h"><div><h2>Absen larut tanpa perintah</h2><p class="lead">Pulang melewati batas lembur, tetapi tidak ada perintah pada tanggal itu, jadi tidak dihitung. Catat perintah bila memang lembur yang disetujui.</p></div></div>
+            <div v-if="!ll.larut_tanpa_perintah.length" class="empty">Tidak ada.</div>
+            <div v-else class="tw"><table><caption class="sr">Absen larut tanpa perintah lembur</caption>
+              <thead><tr><th scope="col">Tanggal</th><th scope="col">Nama</th><th scope="col">Pulang</th><th scope="col" class="num">Lewat jam standar</th><th scope="col">Uraian dari pegawai</th><th scope="col" class="noprint"><span class="sr">Aksi</span></th></tr></thead>
+              <tbody><tr v-for="r in ll.larut_tanpa_perintah" :key="r.tanggal + r.pegawai_id"><td>{{ fmtTgl(r.tanggal) }}</td><td><b>{{ r.nama }}</b></td><td>{{ fmt(r.jam_pulang) }}</td><td class="num">{{ fmtMenit(r.menit) }}</td><td style="white-space:normal;min-width:180px">{{ r.uraian || '–' }}</td>
+                <td class="noprint"><button class="btn sec sm" type="button" @click="openLbm(r, $event)">Catat perintah</button></td></tr></tbody></table></div>
+          </div>
+
+          <div v-if="ll.perintah_tanpa_lembur.length" class="card" id="llTanpa">
+            <div class="card-h"><div><h2>Perintah yang belum menghasilkan lembur</h2><p class="lead">Ada perintah, tetapi belum ada absen pulang atau pulang belum melewati batas minimal.</p></div></div>
+            <div class="tw"><table><caption class="sr">Perintah tanpa lembur</caption>
+              <thead><tr><th scope="col">Tanggal</th><th scope="col">Nama</th><th scope="col">Catatan</th><th scope="col">Keterangan</th></tr></thead>
+              <tbody><tr v-for="r in ll.perintah_tanpa_lembur" :key="r.tanggal + r.pegawai_id"><td>{{ fmtTgl(r.tanggal) }}</td><td><b>{{ r.nama }}</b></td><td style="white-space:normal">{{ r.catatan || '–' }}</td><td>{{ r.alasan }}</td></tr></tbody></table></div>
+          </div>
+        </template>
+      </div>
+    </section>
+
+    <!-- ===== POSISI PEGAWAI ===== -->
+    <section v-show="view === 'posisi'" aria-labelledby="h-pos">
+      <div class="page-h"><div><h1 id="h-pos">Posisi Pegawai</h1><p class="lead">Posisi yang dilaporkan pegawai lewat tombol "Lapor posisi". Pegawai tidak dilacak otomatis.</p></div>
+        <div class="tools noprint"><label class="sr" for="posTgl">Tanggal</label><input id="posTgl" class="inp" type="date" v-model="posDate" style="width:auto" @change="posPeg = ''; loadPosisi()"><button id="posMuat" class="btn sec" type="button" :disabled="posBusy" @click="loadPosisi">{{ posBusy ? 'Memuat…' : 'Muat ulang' }}</button></div></div>
+      <div v-if="posErr" id="posErr" class="banner bad" role="alert">{{ posErr }}</div>
+      <div class="card" style="padding:0;overflow:hidden"><div id="peta" ref="peta" role="application" aria-label="Peta posisi pegawai yang melapor"></div></div>
+      <div class="card">
+        <h2 style="margin-top:0">Laporan terakhir tiap pegawai</h2>
+        <div v-if="posisi && !posisi.terakhir.length" id="posKosong" class="empty">Belum ada pegawai yang melapor posisi pada {{ fmtTgl(posisi.tanggal) }}.</div>
+        <div v-else-if="posisi" class="tw"><table id="posTabel"><caption class="sr">Posisi terakhir pegawai yang melapor</caption>
+          <thead><tr><th scope="col">Pegawai</th><th scope="col">Jam lapor</th><th scope="col">Akurasi</th><th scope="col">Catatan</th><th scope="col">Laporan</th><th scope="col"><span class="sr">Aksi</span></th></tr></thead>
+          <tbody><tr v-for="r in posisi.terakhir" :key="r.pegawai_id"><td><b>{{ r.nama }}</b><div class="hint" style="margin:0">{{ r.jabatan }}</div></td><td>{{ fmt(r.jam) }}</td><td>±{{ r.akurasi }} m</td><td style="white-space:normal;min-width:140px">{{ r.catatan || '–' }}</td><td>{{ r.jumlah }}x</td>
+            <td style="white-space:nowrap"><button class="btn sec sm" type="button" @click="lihatDiPeta(r)">Lihat di peta</button> <button class="btn sec sm" type="button" @click="riwayatPos(r)">Riwayat</button> <a class="link" :href="linkMaps(r)" target="_blank" rel="noopener">Google Maps</a></td></tr></tbody>
+        </table></div>
+      </div>
+      <div v-if="posisi && posisi.riwayat.length && (posPeg || posisi.riwayat.length > posisi.terakhir.length)" class="card" id="posRiwayat">
+        <div class="page-h" style="margin:0 0 8px"><h2 style="margin:0">{{ posPeg ? 'Riwayat laporan ' + posNama : 'Semua laporan hari ini' }}</h2><button v-if="posPeg" class="btn sec sm" type="button" @click="riwayatPos(null)">Tampilkan semua</button></div>
+        <div class="tw"><table><caption class="sr">Riwayat laporan posisi</caption>
+          <thead><tr><th scope="col">Jam</th><th scope="col">Pegawai</th><th scope="col">Akurasi</th><th scope="col">Catatan</th><th scope="col"><span class="sr">Peta</span></th></tr></thead>
+          <tbody><tr v-for="(r, i) in posisi.riwayat" :key="i"><td>{{ fmt(r.jam) }}</td><td>{{ r.nama }}</td><td>±{{ r.akurasi }} m</td><td style="white-space:normal">{{ r.catatan || '–' }}</td><td><a class="link" :href="linkMaps(r)" target="_blank" rel="noopener">Google Maps</a></td></tr></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- ===== ADMIN KANTOR ===== -->
+    <section v-show="view === 'admin'" aria-labelledby="h-adm">
+      <div class="page-h"><div><h1 id="h-adm">Admin Kantor</h1><p class="lead">Admin tambahan bisa mengelola pegawai, laporan, dan pengaturan, tetapi tidak bisa mencabut admin asli.</p></div>
+        <div class="tools noprint"><button id="pwBtn" class="btn sec" type="button" @click="openPw($event)">Ganti password saya</button><button id="admAdd" class="btn" type="button" :disabled="admins.length >= admMaks" @click="openAdm($event)">+ Tambah admin</button></div></div>
+      <div v-if="admErr" class="banner bad" role="alert">{{ admErr }}</div>
+      <div class="card">
+        <div v-if="admBusy && !admins.length" class="empty">Memuat daftar admin…</div>
+        <div v-else class="tw"><table id="admTabel"><caption class="sr">Daftar admin kantor</caption>
+          <thead><tr><th scope="col">Nama</th><th scope="col">Email</th><th scope="col">Peran</th><th scope="col"><span class="sr">Aksi</span></th></tr></thead>
+          <tbody><tr v-for="a in admins" :key="a.admin_id"><td><b>{{ a.nama }}</b><span v-if="a.anda" class="hint" style="margin:0 0 0 6px">(Anda)</span></td><td>{{ a.email }}</td>
+            <td><span class="tag" :class="a.role === 'OWNER' ? 'me' : 'na'">{{ a.role === 'OWNER' ? 'Admin asli' : 'Admin' }}</span></td>
+            <td><button v-if="a.role !== 'OWNER' && !a.anda" class="btn danger sm" type="button" @click="cabutAdm(a)">Cabut akses</button></td></tr></tbody></table></div>
+        <p class="hint">{{ admins.length }} dari maksimal {{ admMaks }} admin. Admin asli adalah yang mendaftarkan kantor ini dan tidak bisa dicabut oleh siapa pun.</p>
+      </div>
+    </section>
+
     <!-- ===== PENGATURAN ===== -->
     <section v-show="view === 'pengaturan'" aria-labelledby="h-set">
       <div class="page-h"><div><h1 id="h-set">Pengaturan</h1><p class="lead">Berlaku untuk seluruh pegawai kantor ini.</p></div></div>
@@ -369,7 +515,8 @@ figure.ph figcaption span{color:var(--mute);font-variant-numeric:tabular-nums}
             <div class="field"><label for="s-jp">Jam pulang</label><input id="s-jp" class="inp" :class="{bad: setErr.jam_pulang}" type="time" v-model="sf.jam_pulang"><p class="err">{{ setErr.jam_pulang }}</p></div>
             <div class="field"><label for="s-tol">Toleransi (menit)</label><input id="s-tol" class="inp" :class="{bad: setErr.toleransi_menit}" type="number" min="0" max="240" v-model="sf.toleransi_menit"><p class="err">{{ setErr.toleransi_menit }}</p></div>
           </div>
-          <p class="hint" style="margin-top:-6px">Terlambat bila absen masuk lewat jam masuk + toleransi. Lembur dihitung dari jam pulang terakhir setelah jam pulang.</p>
+          <div class="row3" style="margin-top:-2px"><div class="field"><label for="s-lmb">Batas minimal lembur (menit)</label><input id="s-lmb" class="inp" :class="{bad: setErr.lembur_min_menit}" type="number" min="0" max="240" v-model="sf.lembur_min_menit"><p class="err">{{ setErr.lembur_min_menit }}</p></div></div>
+          <p class="hint" style="margin-top:-6px">Terlambat bila absen masuk lewat jam masuk + toleransi. Lembur dihitung dari jam pulang standar sampai absen pulang terakhir, hanya bila ada perintah lembur (menu Lembur) dan melewati batas minimal.</p>
           <div class="field" style="margin-top:14px"><span class="lbl">Hari kerja</span>
             <div class="days"><label v-for="d in hariList" :key="d.v" class="chk"><input type="checkbox" :value="d.v" v-model="sf.hari_kerja"> {{ d.l }}</label></div><p class="err">{{ setErr.hari_kerja }}</p></div>
           <div class="field"><span class="lbl">Hari libur (tanggal merah, cuti bersama)</span>
@@ -382,7 +529,8 @@ figure.ph figcaption span{color:var(--mute);font-variant-numeric:tabular-nums}
           <label class="chk" style="padding-left:0"><input id="s-wajib" type="checkbox" v-model="sf.wajib_radius"> Pegawai hanya bisa absen di dalam radius kantor</label>
           <p class="hint" v-if="sf.wajib_radius">Di luar radius, absen ditolak kecuali pegawai memiliki Surat Tugas yang berlaku.</p>
           <p class="hint" v-else style="color:var(--bad);font-weight:700">Dinonaktifkan: pegawai bisa absen dari mana saja. Tidak disarankan.</p>
-          <div class="row2" style="margin-top:14px">
+          <div class="field" style="margin-top:14px"><label for="s-nl">Nama lokasi utama</label><input id="s-nl" class="inp" style="max-width:360px" v-model="sf.nama_lokasi" maxlength="60" placeholder="Kantor utama"><p class="hint">Dicap di foto absen dan tampil di laporan.</p></div>
+          <div class="row2">
             <div class="field"><label for="s-lat">Latitude kantor</label><input id="s-lat" class="inp" :class="{bad: setErr.lat_kantor}" inputmode="decimal" v-model.trim="sf.lat_kantor" placeholder="-7.250445"><p class="err">{{ setErr.lat_kantor }}</p></div>
             <div class="field"><label for="s-lng">Longitude kantor</label><input id="s-lng" class="inp" :class="{bad: setErr.lng_kantor}" inputmode="decimal" v-model.trim="sf.lng_kantor" placeholder="112.768845"><p class="err">{{ setErr.lng_kantor }}</p></div>
           </div>
@@ -391,6 +539,17 @@ figure.ph figcaption span{color:var(--mute);font-variant-numeric:tabular-nums}
             <div class="field" style="margin:0"><label for="s-rad">Radius (meter)</label><input id="s-rad" class="inp" :class="{bad: setErr.radius_m}" type="number" min="10" max="5000" v-model="sf.radius_m"><p class="err">{{ setErr.radius_m }}</p></div>
             <div class="field" style="margin:0"><label for="s-akr">Batas akurasi GPS (meter)</label><input id="s-akr" class="inp" :class="{bad: setErr.max_akurasi_m}" type="number" min="10" max="1000" v-model="sf.max_akurasi_m"><p class="err">{{ setErr.max_akurasi_m }}</p></div>
           </div>
+        </div>
+        <div class="card" id="lokasiCard">
+          <div class="card-h"><div><h2>Lokasi kantor tambahan</h2><p class="lead">Untuk cabang atau gedung lain. Pegawai boleh absen di lokasi mana pun yang aktif, kecuali dibatasi di data pegawainya.</p></div><button id="lkAdd" class="btn sec" type="button" @click="openLk(null, $event)">+ Tambah lokasi</button></div>
+          <div v-if="lkErr" class="banner bad" role="alert">{{ lkErr }}</div>
+          <div class="tw"><table id="lkTabel"><caption class="sr">Daftar lokasi kantor</caption>
+            <thead><tr><th scope="col">Nama</th><th scope="col">Koordinat</th><th scope="col" class="num">Radius</th><th scope="col">Status</th><th scope="col"><span class="sr">Aksi</span></th></tr></thead>
+            <tbody><tr v-for="l in lokasi" :key="l.lokasi_id"><td><b>{{ l.nama }}</b><span v-if="l.utama" class="hint" style="margin:0 0 0 6px">(lokasi utama, diatur di atas)</span></td>
+              <td>{{ l.lat === null ? '–' : l.lat + ', ' + l.lng }}</td><td class="num">{{ l.radius_m }} m</td>
+              <td><span class="tag" :class="l.status === 'AKTIF' ? 'ok' : (l.status === 'BELUM_DIATUR' ? 'late' : 'na')">{{ ({AKTIF: 'Aktif', NONAKTIF: 'Nonaktif', BELUM_DIATUR: 'Belum diatur'})[l.status] }}</span></td>
+              <td style="white-space:nowrap"><template v-if="!l.utama"><button class="btn sec sm" type="button" @click="openLk(l, $event)">Ubah</button> <button v-if="l.status === 'AKTIF'" class="btn danger sm" type="button" @click="lkStatus(l, 'NONAKTIF')">Nonaktifkan</button><button v-else class="btn sec sm" type="button" @click="lkStatus(l, 'AKTIF')">Aktifkan</button></template></td></tr></tbody></table></div>
+          <p class="hint">Nonaktifkan lokasi yang sudah tidak dipakai; absen lama tetap menyimpan nama lokasinya.</p>
         </div>
         <div class="acts" style="margin-top:16px"><button id="setSave" class="btn" type="submit" :disabled="setBusy"><span v-if="setBusy" class="spin" aria-hidden="true"></span>{{ setBusy ? 'Menyimpan…' : 'Simpan pengaturan' }}</button></div>
         <p class="hint" style="text-align:right">Perubahan berlaku di semua server absensi dalam beberapa menit.</p>
@@ -406,6 +565,9 @@ figure.ph figcaption span{color:var(--mute);font-variant-numeric:tabular-nums}
       <div class="field"><label for="pm-nama">Nama lengkap</label><input id="pm-nama" ref="pmFirst" class="inp" :class="{bad: pmErr.nama}" v-model="pm.nama" autocomplete="off"><p class="err">{{ pmErr.nama }}</p></div>
       <div class="field"><label for="pm-email">Email (untuk login)</label><input id="pm-email" class="inp" :class="{bad: pmErr.email}" type="email" v-model.trim="pm.email" autocomplete="off"><p class="err">{{ pmErr.email }}</p></div>
       <div class="field"><label for="pm-jab">Jabatan</label><input id="pm-jab" class="inp" v-model="pm.jabatan" autocomplete="off"></div>
+      <div v-if="lokasiAktif.length > 1" class="field"><span class="lbl">Boleh absen di</span>
+        <div class="checks" id="pmLok"><label v-for="l in lokasiAktif" :key="l.lokasi_id" class="chk"><input type="checkbox" :value="l.lokasi_id" v-model="pm.lokasi_ids"> {{ l.nama }}</label></div>
+        <p class="hint">Kosongkan semua centang bila pegawai boleh absen di semua lokasi.</p><p class="err">{{ pmErr.lokasi_ids }}</p></div>
       <div v-if="pm.pegawai_id" class="field"><label for="pm-status">Status</label><select id="pm-status" class="inp" v-model="pm.status"><option value="AKTIF">Aktif</option><option value="NONAKTIF">Nonaktif (tidak bisa login dan absen)</option></select></div>
       <div class="field"><label for="pm-pin">{{ pm.pegawai_id ? 'Reset PIN (kosongkan bila tidak diubah)' : 'PIN awal' }}</label><input id="pm-pin" class="inp" :class="{bad: pmErr.pin}" inputmode="numeric" v-model.trim="pm.pin" autocomplete="off" placeholder="4–12 angka"><p class="err">{{ pmErr.pin }}</p><p class="hint">Sampaikan PIN ini ke pegawai. Setelah login pertama, PIN diacak (hash) dan dihapus dari Spreadsheet.</p></div>
       <div v-if="pmMsg" class="banner bad" role="alert">{{ pmMsg }}</div>
@@ -427,6 +589,67 @@ figure.ph figcaption span{color:var(--mute);font-variant-numeric:tabular-nums}
       <div class="acts"><button class="btn sec" type="button" @click="closeModal">Batal</button><button id="smSave" class="btn" type="submit" :disabled="smBusy">{{ smBusy ? 'Menyimpan…' : 'Simpan' }}</button></div>
     </form></div></div>
 
+  <!-- ===== MODAL TAMBAH ADMIN ===== -->
+  <div v-if="am" class="modal" @click.self="closeModal"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="am-h">
+    <div class="sheet-h"><h2 id="am-h">Tambah admin</h2><button class="xbtn" type="button" @click="closeModal" aria-label="Tutup"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <form @submit.prevent="saveAdm" novalidate>
+      <div class="field"><label for="am-nama">Nama</label><input id="am-nama" ref="amFirst" class="inp" :class="{bad: amErr.nama}" v-model="am.nama" autocomplete="off"><p class="err">{{ amErr.nama }}</p></div>
+      <div class="field"><label for="am-email">Email (untuk login admin)</label><input id="am-email" class="inp" :class="{bad: amErr.email}" type="email" v-model.trim="am.email" autocomplete="off"><p class="err">{{ amErr.email }}</p></div>
+      <div class="field"><label for="am-pw">Password awal</label><input id="am-pw" class="inp" :class="{bad: amErr.password}" type="password" v-model="am.password" autocomplete="new-password"><p class="err">{{ amErr.password }}</p><p class="hint">Minimal 8 karakter. Sampaikan langsung kepada yang bersangkutan; ia bisa menggantinya di menu Admin.</p></div>
+      <div v-if="amMsg" class="banner bad" role="alert">{{ amMsg }}</div>
+      <div class="acts"><button class="btn sec" type="button" @click="closeModal">Batal</button><button id="amSave" class="btn" type="submit" :disabled="amBusy">{{ amBusy ? 'Menyimpan…' : 'Tambah admin' }}</button></div>
+    </form></div></div>
+
+  <!-- ===== MODAL GANTI PASSWORD ===== -->
+  <div v-if="pw" class="modal" @click.self="closeModal"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="pw-h">
+    <div class="sheet-h"><h2 id="pw-h">Ganti password saya</h2><button class="xbtn" type="button" @click="closeModal" aria-label="Tutup"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <form @submit.prevent="savePw" novalidate>
+      <div class="field"><label for="pw-lama">Password lama</label><input id="pw-lama" ref="pwFirst" class="inp" :class="{bad: pwErr.password_lama}" type="password" v-model="pw.password_lama" autocomplete="current-password"><p class="err">{{ pwErr.password_lama }}</p></div>
+      <div class="field"><label for="pw-baru">Password baru</label><input id="pw-baru" class="inp" :class="{bad: pwErr.password_baru}" type="password" v-model="pw.password_baru" autocomplete="new-password"><p class="err">{{ pwErr.password_baru }}</p></div>
+      <div v-if="pwMsg" class="banner bad" role="alert">{{ pwMsg }}</div>
+      <div class="acts"><button class="btn sec" type="button" @click="closeModal">Batal</button><button id="pwSave" class="btn" type="submit" :disabled="pwBusy">{{ pwBusy ? 'Menyimpan…' : 'Ganti password' }}</button></div>
+    </form></div></div>
+
+  <!-- ===== MODAL PERINTAH LEMBUR ===== -->
+  <div v-if="lbm" class="modal" @click.self="closeModal"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="lbm-h">
+    <div class="sheet-h"><h2 id="lbm-h">Catat perintah lembur</h2><button class="xbtn" type="button" @click="closeModal" aria-label="Tutup"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <form @submit.prevent="saveLbm" novalidate>
+      <div class="row2"><div class="field"><label for="lbm-m">Tanggal lembur</label><input id="lbm-m" ref="lbmFirst" class="inp" :class="{bad: lbmErr.tanggal}" type="date" :value="lbm.tanggal" @input="onLbmMulai($event.target.value)"><p class="err">{{ lbmErr.tanggal }}</p></div>
+        <div class="field"><label for="lbm-s">Sampai tanggal</label><input id="lbm-s" class="inp" :class="{bad: lbmErr.tanggal_selesai}" type="date" v-model="lbm.tanggal_selesai"><p class="err">{{ lbmErr.tanggal_selesai }}</p></div></div>
+      <div class="field"><label for="lbm-cat">Catatan (opsional)</label><input id="lbm-cat" class="inp" v-model="lbm.catatan" maxlength="200" autocomplete="off" placeholder="Mis. penutupan anggaran"></div>
+      <div class="field"><span class="lbl">Pegawai ({{ lbm.pegawai_ids.length }} dipilih)</span>
+        <div class="tools" style="margin-bottom:8px"><button class="btn sec sm" type="button" @click="lbm.pegawai_ids = aktifList.map(function (p) { return p.pegawai_id; })">Pilih semua</button><button class="btn sec sm" type="button" @click="lbm.pegawai_ids = []">Kosongkan</button></div>
+        <div class="checks" id="lbmPeg"><label v-for="p in aktifList" :key="p.pegawai_id" class="chk"><input type="checkbox" :value="p.pegawai_id" v-model="lbm.pegawai_ids"> {{ p.nama }}</label><span v-if="!aktifList.length" class="hint">Belum ada pegawai aktif.</span></div><p class="err">{{ lbmErr.pegawai_ids }}</p></div>
+      <p class="hint" style="margin-top:-6px">Tanggal yang sudah punya perintah aktif untuk pegawai yang sama dilewati, tidak digandakan.</p>
+      <div v-if="lbmMsg" class="banner bad" role="alert">{{ lbmMsg }}</div>
+      <div class="acts"><button class="btn sec" type="button" @click="closeModal">Batal</button><button id="lbmSave" class="btn" type="submit" :disabled="lbmBusy">{{ lbmBusy ? 'Menyimpan…' : 'Simpan perintah' }}</button></div>
+    </form></div></div>
+
+  <!-- ===== MODAL URAIAN LEMBUR (ADMIN) ===== -->
+  <div v-if="um" class="modal" @click.self="closeModal"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="um-h">
+    <div class="sheet-h"><h2 id="um-h">Uraian lembur · {{ um.nama }}</h2><button class="xbtn" type="button" @click="closeModal" aria-label="Tutup"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <form @submit.prevent="saveUm" novalidate>
+      <p class="hint" style="margin-top:0">{{ fmtTgl(um.tanggal) }}. Admin boleh mengisi atau mengubah uraian bila pegawai lupa. Perubahan ditandai "Diisi admin" dan tidak ditimpa pegawai.</p>
+      <div class="field"><label for="um-teks">Uraian pekerjaan lembur</label><textarea id="um-teks" ref="umFirst" class="inp" :class="{bad: umErr}" v-model="um.uraian" maxlength="300" rows="4"></textarea><p class="err">{{ umErr }}</p><p class="hint">Kosongkan untuk menghapus uraian.</p></div>
+      <div class="acts"><button class="btn sec" type="button" @click="closeModal">Batal</button><button id="umSave" class="btn" type="submit" :disabled="umBusy">{{ umBusy ? 'Menyimpan…' : 'Simpan uraian' }}</button></div>
+    </form></div></div>
+
+  <!-- ===== MODAL LOKASI ===== -->
+  <div v-if="lkm" class="modal" @click.self="closeModal"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="lkm-h">
+    <div class="sheet-h"><h2 id="lkm-h">{{ lkm.lokasi_id ? 'Ubah lokasi' : 'Tambah lokasi' }}</h2><button class="xbtn" type="button" @click="closeModal" aria-label="Tutup"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <form @submit.prevent="saveLk" novalidate>
+      <div class="field"><label for="lkm-nama">Nama lokasi</label><input id="lkm-nama" ref="lkmFirst" class="inp" :class="{bad: lkmErr.nama}" v-model="lkm.nama" autocomplete="off" placeholder="Mis. Cabang Malang"><p class="err">{{ lkmErr.nama }}</p></div>
+      <div class="row2">
+        <div class="field"><label for="lkm-lat">Latitude</label><input id="lkm-lat" class="inp" :class="{bad: lkmErr.lat}" inputmode="decimal" v-model.trim="lkm.lat" placeholder="-7.250445"><p class="err">{{ lkmErr.lat }}</p></div>
+        <div class="field"><label for="lkm-lng">Longitude</label><input id="lkm-lng" class="inp" :class="{bad: lkmErr.lng}" inputmode="decimal" v-model.trim="lkm.lng" placeholder="112.768845"><p class="err">{{ lkmErr.lng }}</p></div>
+      </div>
+      <div class="tools" style="margin:-4px 0 14px"><button id="lkmGeo" class="btn sec" type="button" @click="pakaiLokasiLk" :disabled="geoBusy">{{ geoBusy ? 'Mencari lokasi…' : 'Gunakan lokasi saya sekarang' }}</button><span class="hint" style="margin:0">{{ geoMsg }}</span></div>
+      <div class="field"><label for="lkm-rad">Radius (meter)</label><input id="lkm-rad" class="inp" :class="{bad: lkmErr.radius_m}" type="number" min="10" max="5000" v-model="lkm.radius_m"><p class="err">{{ lkmErr.radius_m }}</p></div>
+      <div v-if="lkm.lokasi_id" class="field"><label for="lkm-st">Status</label><select id="lkm-st" class="inp" v-model="lkm.status"><option value="AKTIF">Aktif</option><option value="NONAKTIF">Nonaktif</option></select></div>
+      <div v-if="lkmMsg" class="banner bad" role="alert">{{ lkmMsg }}</div>
+      <div class="acts"><button class="btn sec" type="button" @click="closeModal">Batal</button><button id="lkmSave" class="btn" type="submit" :disabled="lkmBusy">{{ lkmBusy ? 'Menyimpan…' : 'Simpan' }}</button></div>
+    </form></div></div>
+
   <!-- ===== MODAL FOTO ===== -->
   <div v-if="fm" id="fotoModal" class="modal" @click.self="closeModal"><div class="sheet wide" role="dialog" aria-modal="true" aria-labelledby="fm-h">
     <div class="sheet-h"><h2 id="fm-h">{{ fm.nama }} · {{ fmtTgl(fm.tanggal) }}</h2><button id="fmClose" ref="fmFirst" class="xbtn" type="button" @click="closeModal" aria-label="Tutup"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
@@ -439,6 +662,7 @@ figure.ph figcaption span{color:var(--mute);font-variant-numeric:tabular-nums}
           <span v-else-if="photoState[fkey(s)] === 'error'">{{ photoMsg[fkey(s)] }}<br><button class="link" type="button" @click="loadFoto(s)">Coba lagi</button></span>
           <span v-else>{{ fm['jam_' + s] ? 'Foto tidak tersedia' : (s === 'pulang' ? 'Belum absen pulang' : 'Tidak ada absen masuk') }}</span>
         </div>
+        <div v-if="fm['lokasi_' + s] || fm['alamat_' + s]" class="hint" style="margin:6px 0 0">{{ fm['lokasi_' + s] }}<span v-if="fm['alamat_' + s]"> · {{ fm['alamat_' + s] }} (alamat perkiraan)</span></div>
       </figure>
     </div>
   </div></div>
@@ -447,10 +671,11 @@ figure.ph figcaption span{color:var(--mute);font-variant-numeric:tabular-nums}
 </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.min.js"></script>
 <script>
 // ============ PENGATURAN ============
-const MASTER_URL = 'https://script.google.com/macros/s/AKfycbxdv5vVFcDJHmAWS2el5px-TC3sGQ2qrHkCkJqKvz1ERHzQHLQzdpOtGnMcGwFskLpmmw/exec'; // URL Web App masterAbsen
+const MASTER_URL = 'GANTI_DENGAN_URL_WEB_APP_MASTERABSEN'; // URL Web App masterAbsen
 const CONFIGURED = /^https:\/\/script\.google(usercontent)?\.com\//.test(MASTER_URL);
 const SS_KEY = 'absen_admin';
 const BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
@@ -495,6 +720,9 @@ new Vue({
         { id: 'laporan', label: 'Laporan', icon: '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h7"/>' },
         { id: 'pegawai', label: 'Pegawai', icon: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.5 3.2-5.5 6.5-5.5s5.9 2 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 010 6.8M18 14.8c1.9.7 3.2 2.4 3.5 5.2"/>' },
         { id: 'st', label: 'Surat Tugas', icon: '<path d="M4 7h16v12H4z"/><path d="M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2M4 12h16"/>' },
+        { id: 'lembur', label: 'Lembur', icon: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>' },
+        { id: 'posisi', label: 'Posisi', icon: '<path d="M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>' },
+        { id: 'admin', label: 'Admin', icon: '<path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>' },
         { id: 'pengaturan', label: 'Pengaturan', icon: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/>' }
       ],
       copied: false, lokasiBelum: false, toast: { msg: '', kind: 'ok' }, toastTimer: null, lastFocus: null,
@@ -505,12 +733,18 @@ new Vue({
       st: [], stBusy: false, stErr: '', sm: null, smErr: {}, smMsg: '', smBusy: false,
       sf: null, setErr: {}, setErrLoad: '', setBusy: false, setMsg: '', setMsgKind: 'ok', liburBaru: '', geoBusy: false, geoMsg: '',
       hariList: [{ v: '1', l: 'Sen' }, { v: '2', l: 'Sel' }, { v: '3', l: 'Rab' }, { v: '4', l: 'Kam' }, { v: '5', l: 'Jum' }, { v: '6', l: 'Sab' }, { v: '7', l: 'Min' }],
+      posNama: '', posisi: null, posDate: '', posBusy: false, posErr: '', posPeg: '',
+      admins: [], admBusy: false, admErr: '', admAsli: false, admMaks: 10, am: null, amErr: {}, amMsg: '', amBusy: false, pw: null, pwErr: {}, pwMsg: '', pwBusy: false,
+      lokasi: [], lkBusy: false, lkErr: '', lkm: null, lkmErr: {}, lkmMsg: '', lkmBusy: false,
+      lemTab: 'perintah', lbList: [], lbBusy: false, lbErr: '', lbF: { dari: '', sampai: '' }, lbm: null, lbmErr: {}, lbmMsg: '', lbmBusy: false,
+      ll: null, llF: { dari: ymd(new Date(now.getFullYear(), now.getMonth(), 1)), sampai: ymd(now), pegawai_id: '' }, llBusy: false, llErr: '', llPegNama: '', um: null, umErr: '', umBusy: false,
       fm: null, photos: {}, photoState: {}, photoMsg: {}
     };
   },
   computed: {
     persen() { const r = this.dash && this.dash.ringkas; return r && r.pegawai_aktif ? Math.round(r.hadir / r.pegawai_aktif * 100) : 0; },
     aktifList() { return this.pegawai.filter((p) => p.status === 'AKTIF'); },
+    lokasiAktif() { return this.lokasi.filter((l) => l.status === 'AKTIF'); },
     chart() {
       const W = 640, H = 230, L = 30, T = 14, base = 186, R = 6;
       const tren = this.dash ? this.dash.tren : [];
@@ -537,7 +771,7 @@ new Vue({
     if (this.session) this.afterLogin(); else this.$nextTick(() => this.$refs.email && this.$refs.email.focus());
     this.$watch('lf.email', () => { this.loginErr.email = ''; this.loginMsg = ''; });
     this.$watch('lf.password', () => { this.loginErr.password = ''; this.loginMsg = ''; });
-    document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && (this.pm || this.sm || this.fm)) this.closeModal(); });
+    document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && (this.pm || this.sm || this.fm || this.am || this.pw || this.lbm || this.um || this.lkm)) this.closeModal(); });
   },
   methods: {
     fmt(t) { return t ? String(t).replace(':', '.') : '–'; },
@@ -557,11 +791,11 @@ new Vue({
       this.busy = false;
       if (!r.ok) { this.loginMsg = r.message || 'Gagal masuk. Coba lagi.'; return; }
       this.lf.password = '';
-      this.session = { token: r.token, nama: r.nama, email: r.email, id_app: r.id_app, nama_kantor: r.nama_kantor, engine_id: r.engine_id, engine_url: r.engine_url };
+      this.session = { token: r.token, nama: r.nama, email: r.email, id_app: r.id_app, nama_kantor: r.nama_kantor, engine_id: r.engine_id, engine_url: r.engine_url, admin_id: r.admin_id, role: r.role };
       store.set(SS_KEY, this.session); this.view = 'dashboard'; this.afterLogin();
     },
     logout(msg) {
-      store.del(SS_KEY); this.session = null; this.dash = null; this.lap = null; this.pegawai = []; this.st = []; this.sf = null; this.fm = this.pm = this.sm = null;
+      store.del(SS_KEY); this.session = null; this.dash = null; this.lap = null; this.pegawai = []; this.st = []; this.sf = null; this.fm = this.pm = this.sm = this.am = this.pw = this.lbm = this.um = this.lkm = null; this.posisi = null; this.admins = []; this.lokasi = []; this.lbList = []; this.ll = null;
       this.loginMsg = typeof msg === 'string' ? msg : ''; this.$nextTick(() => this.$refs.email && this.$refs.email.focus());
     },
     afterLogin() { this.loadDash(); this.loadSettings(true); },
@@ -591,9 +825,12 @@ new Vue({
       this.view = v; this.toast.msg = '';
       if (v === 'dashboard') this.loadDash();
       if (v === 'laporan' && !this.pegawai.length) this.loadPegawai();
-      if (v === 'pegawai') this.loadPegawai();
+      if (v === 'pegawai') { this.loadPegawai(); this.loadLokasi(); }
+      if (v === 'lembur') { this.loadLembur(); if (!this.pegawai.length) this.loadPegawai(); }
       if (v === 'st') { this.loadST(); if (!this.pegawai.length) this.loadPegawai(); }
-      if (v === 'pengaturan') this.loadSettings();
+      if (v === 'pengaturan') { this.loadSettings(); this.loadLokasi(); }
+      if (v === 'posisi') { this.$nextTick(() => { this.initMap(); this.loadPosisi(); }); }
+      if (v === 'admin') this.loadAdmins();
     },
 
     // --- dashboard
@@ -634,8 +871,8 @@ new Vue({
         rows = l.rekap.map((r) => [r.nama, r.jabatan, r.hari_kerja, r.hadir, r.tepat, r.terlambat, r.alpa, r.dinas_luar, r.dinas_tanpa_absen, r.tanpa_pulang, this.fmtMenit(r.total_menit), this.fmtMenit(r.lembur_menit), r.rata_jam_masuk]);
         nama = 'rekap';
       } else {
-        head = ['Tanggal', 'Nama', 'Jabatan', 'Masuk', 'Pulang', 'Durasi', 'Lembur', 'Status', 'Keterangan'];
-        rows = l.detail.map((r) => [r.tanggal, r.nama, r.jabatan, r.jam_masuk, r.jam_pulang, r.durasi_menit === null || r.durasi_menit === undefined ? '' : this.fmtMenit(r.durasi_menit), r.lembur_menit ? this.fmtMenit(r.lembur_menit) : '', r.status, r.keterangan]);
+        head = ['Tanggal', 'Nama', 'Jabatan', 'Masuk', 'Pulang', 'Durasi', 'Lembur', 'Status', 'Keterangan', 'Lokasi masuk', 'Alamat masuk (perkiraan)', 'Lokasi pulang', 'Alamat pulang (perkiraan)'];
+        rows = l.detail.map((r) => [r.tanggal, r.nama, r.jabatan, r.jam_masuk, r.jam_pulang, r.durasi_menit === null || r.durasi_menit === undefined ? '' : this.fmtMenit(r.durasi_menit), r.lembur_menit ? this.fmtMenit(r.lembur_menit) : '', r.status, r.keterangan, r.lokasi_masuk, r.alamat_masuk, r.lokasi_pulang, r.alamat_pulang]);
         nama = 'rincian';
       }
       const text = '﻿' + [head].concat(rows).map((r) => r.map(csvCell).join(';')).join('\r\n');
@@ -652,7 +889,8 @@ new Vue({
     },
     openPeg(p, ev) {
       this.lastFocus = ev && ev.currentTarget; this.pmErr = {}; this.pmMsg = '';
-      this.pm = p ? { pegawai_id: p.pegawai_id, nama: p.nama, email: p.email, jabatan: p.jabatan, status: p.status, pin: '' } : { pegawai_id: '', nama: '', email: '', jabatan: '', status: 'AKTIF', pin: '' };
+      this.pm = p ? { pegawai_id: p.pegawai_id, nama: p.nama, email: p.email, jabatan: p.jabatan, status: p.status, pin: '', lokasi_ids: (p.lokasi_ids || []).slice() } : { pegawai_id: '', nama: '', email: '', jabatan: '', status: 'AKTIF', pin: '', lokasi_ids: [] };
+      if (!this.lokasi.length) this.loadLokasi();
       this.$nextTick(() => this.$refs.pmFirst && this.$refs.pmFirst.focus());
     },
     async savePeg() {
@@ -694,7 +932,8 @@ new Vue({
         jam_masuk: s.jam_masuk, jam_pulang: s.jam_pulang, toleransi_menit: s.toleransi_menit, zona_waktu: s.zona_waktu || 'Asia/Jakarta',
         lat_kantor: s.lat_kantor, lng_kantor: s.lng_kantor, radius_m: s.radius_m, max_akurasi_m: s.max_akurasi_m,
         wajib_radius: String(s.wajib_radius).toUpperCase() !== 'TIDAK', hari_kerja: String(s.hari_kerja || '').split(',').filter(Boolean),
-        hari_libur: String(s.hari_libur || '').split(',').filter(Boolean)
+        hari_libur: String(s.hari_libur || '').split(',').filter(Boolean),
+        lembur_min_menit: s.lembur_min_menit === undefined || s.lembur_min_menit === '' ? '30' : s.lembur_min_menit, nama_lokasi: s.nama_lokasi || ''
       };
     },
     async loadSettings(quiet) {
@@ -717,13 +956,211 @@ new Vue({
       const f = this.sf;
       const values = {
         jam_masuk: f.jam_masuk, jam_pulang: f.jam_pulang, toleransi_menit: f.toleransi_menit, zona_waktu: f.zona_waktu, lat_kantor: f.lat_kantor, lng_kantor: f.lng_kantor,
-        radius_m: f.radius_m, max_akurasi_m: f.max_akurasi_m, wajib_radius: f.wajib_radius ? 'YA' : 'TIDAK', hari_kerja: f.hari_kerja.join(','), hari_libur: f.hari_libur.join(',')
+        radius_m: f.radius_m, max_akurasi_m: f.max_akurasi_m, wajib_radius: f.wajib_radius ? 'YA' : 'TIDAK', hari_kerja: f.hari_kerja.join(','), hari_libur: f.hari_libur.join(','), lembur_min_menit: f.lembur_min_menit, nama_lokasi: f.nama_lokasi
       };
       const r = await this.api('admin_settings_set', { values });
       this.setBusy = false;
-      if (r.ok) { this.sf = this.toForm(r.settings); this.lokasiBelum = !r.settings.lat_kantor || !r.settings.lng_kantor; this.setMsgKind = 'ok'; this.setMsg = 'Pengaturan tersimpan. Berlaku di semua server absensi dalam beberapa menit.'; window.scrollTo(0, 0); }
+      if (r.ok) { this.sf = this.toForm(r.settings); this.lokasiBelum = !r.settings.lat_kantor || !r.settings.lng_kantor; this.loadLokasi(); this.setMsgKind = 'ok'; this.setMsg = 'Pengaturan tersimpan. Berlaku di semua server absensi dalam beberapa menit.'; window.scrollTo(0, 0); }
       else if (r.errors) { this.setErr = r.errors; this.setMsgKind = 'bad'; this.setMsg = 'Periksa kembali isian yang ditandai.'; window.scrollTo(0, 0); }
       else if (r.code !== 'SESI_HABIS') { this.setMsgKind = 'bad'; this.setMsg = r.message || 'Gagal menyimpan.'; }
+    },
+
+    // --- lokasi kantor tambahan
+    async loadLokasi() {
+      this.lkBusy = true; this.lkErr = '';
+      const r = await this.api('admin_lokasi_list', {});
+      this.lkBusy = false;
+      if (r.ok) this.lokasi = r.rows; else if (r.code !== 'SESI_HABIS') this.lkErr = r.message || 'Gagal memuat lokasi.';
+    },
+    lokNama(ids) {
+      if (!ids || !ids.length) return 'Semua lokasi';
+      return ids.map((id) => { const l = this.lokasi.find((x) => x.lokasi_id === id); return l ? l.nama : id; }).join(', ');
+    },
+    openLk(l, ev) {
+      this.lastFocus = ev && ev.currentTarget; this.lkmErr = {}; this.lkmMsg = ''; this.geoMsg = '';
+      this.lkm = l ? { lokasi_id: l.lokasi_id, nama: l.nama, lat: String(l.lat), lng: String(l.lng), radius_m: l.radius_m, status: l.status } : { lokasi_id: '', nama: '', lat: '', lng: '', radius_m: 100, status: 'AKTIF' };
+      this.$nextTick(() => this.$refs.lkmFirst && this.$refs.lkmFirst.focus());
+    },
+    pakaiLokasiLk() {
+      if (!navigator.geolocation) { this.geoMsg = 'Perangkat ini tidak mendukung lokasi.'; return; }
+      this.geoBusy = true; this.geoMsg = '';
+      navigator.geolocation.getCurrentPosition((p) => {
+        this.geoBusy = false; this.lkm.lat = p.coords.latitude.toFixed(6); this.lkm.lng = p.coords.longitude.toFixed(6);
+        this.geoMsg = 'Terisi dari lokasi Anda (akurasi ' + Math.round(p.coords.accuracy) + ' m). Pastikan Anda sedang berada di lokasi itu.';
+      }, (e) => { this.geoBusy = false; this.geoMsg = e.code === 1 ? 'Izin lokasi ditolak. Isi koordinat secara manual.' : 'Lokasi tidak ditemukan. Coba lagi atau isi manual.'; }, { enableHighAccuracy: true, timeout: 12000 });
+    },
+    async saveLk() {
+      this.lkmErr = {}; this.lkmMsg = ''; this.lkmBusy = true;
+      const r = await this.api('admin_lokasi_save', this.lkm);
+      this.lkmBusy = false;
+      if (r.ok) { const baru = !this.lkm.lokasi_id; this.closeModal(); this.say(baru ? 'Lokasi ditambahkan.' : 'Lokasi disimpan.'); this.loadLokasi(); return; }
+      if (r.errors) this.lkmErr = r.errors; else if (r.code !== 'SESI_HABIS') this.lkmMsg = r.message || 'Gagal menyimpan lokasi.';
+    },
+    async lkStatus(l, status) {
+      if (status === 'NONAKTIF' && !window.confirm('Nonaktifkan lokasi ' + l.nama + '?\nPegawai tidak lagi bisa absen di lokasi ini. Absen lama tidak berubah.')) return;
+      const r = await this.api('admin_lokasi_save', { lokasi_id: l.lokasi_id, nama: l.nama, lat: l.lat, lng: l.lng, radius_m: l.radius_m, status });
+      if (r.ok) { this.say(status === 'AKTIF' ? 'Lokasi diaktifkan.' : 'Lokasi dinonaktifkan.'); this.loadLokasi(); } else if (r.code !== 'SESI_HABIS') this.say(r.message || 'Gagal mengubah lokasi.', 'bad');
+    },
+
+    // --- lembur: perintah
+    async loadLembur() {
+      this.lbBusy = true; this.lbErr = '';
+      const r = await this.api('admin_lembur_list', { dari: this.lbF.dari, sampai: this.lbF.sampai });
+      this.lbBusy = false;
+      if (r.ok) { this.lbList = r.rows; if (!this.lbF.dari) this.lbF = { dari: r.dari, sampai: r.sampai }; }
+      else if (r.code !== 'SESI_HABIS') this.lbErr = r.message || 'Gagal memuat perintah lembur.';
+    },
+    onLbmMulai(v) { const lama = this.lbm.tanggal; this.lbm.tanggal = v; if (v && (!this.lbm.tanggal_selesai || this.lbm.tanggal_selesai === lama || this.lbm.tanggal_selesai < v)) this.lbm.tanggal_selesai = v; },
+    openLbm(pre, ev) {
+      this.lastFocus = ev && ev.currentTarget; this.lbmErr = {}; this.lbmMsg = '';
+      const t = pre && pre.tanggal ? pre.tanggal : ymd(new Date());
+      this.lbm = { tanggal: t, tanggal_selesai: t, pegawai_ids: pre && pre.pegawai_id ? [pre.pegawai_id] : [], catatan: '' };
+      if (!this.pegawai.length) this.loadPegawai();
+      this.$nextTick(() => this.$refs.lbmFirst && this.$refs.lbmFirst.focus());
+    },
+    async saveLbm() {
+      this.lbmErr = {}; this.lbmMsg = ''; this.lbmBusy = true;
+      const r = await this.api('admin_lembur_save', this.lbm);
+      this.lbmBusy = false;
+      if (r.ok) {
+        this.closeModal(); this.say('Perintah lembur dicatat: ' + r.dibuat + ' baru' + (r.sudah_ada ? ', ' + r.sudah_ada + ' sudah ada.' : '.'));
+        this.loadLembur(); if (this.ll) this.loadLaporanLembur(true); return;
+      }
+      if (r.errors) this.lbmErr = r.errors; else if (r.code !== 'SESI_HABIS') this.lbmMsg = r.message || 'Gagal menyimpan perintah.';
+    },
+    async lbStatus(r, status) {
+      if (status === 'BATAL' && !window.confirm('Batalkan perintah lembur ' + r.nama + ' pada ' + this.fmtTgl(r.tanggal) + '?\nLembur pada tanggal itu tidak lagi dihitung (absen dan uraian tetap tersimpan).')) return;
+      const x = await this.api('admin_lembur_save', { lembur_id: r.lembur_id, catatan: r.catatan, status });
+      if (x.ok) { this.say(status === 'BATAL' ? 'Perintah dibatalkan.' : 'Perintah diaktifkan lagi.'); this.loadLembur(); if (this.ll) this.loadLaporanLembur(true); } else if (x.code !== 'SESI_HABIS') this.say(x.message || 'Gagal mengubah perintah.', 'bad');
+    },
+
+    // --- lembur: laporan
+    presetLem(k) {
+      const n = new Date();
+      if (k === 'bulan') this.llF = Object.assign({}, this.llF, { dari: ymd(new Date(n.getFullYear(), n.getMonth(), 1)), sampai: ymd(n) });
+      if (k === 'lalu') this.llF = Object.assign({}, this.llF, { dari: ymd(new Date(n.getFullYear(), n.getMonth() - 1, 1)), sampai: ymd(new Date(n.getFullYear(), n.getMonth(), 0)) });
+      this.loadLaporanLembur();
+    },
+    async loadLaporanLembur(quiet) {
+      this.llErr = '';
+      if (!this.llF.dari || !this.llF.sampai) { this.llErr = 'Isi tanggal awal dan akhir.'; return; }
+      if (!this.pegawai.length) this.loadPegawai();
+      this.llBusy = !quiet;
+      const r = await this.api('admin_lembur_laporan', { dari: this.llF.dari, sampai: this.llF.sampai, pegawai_id: this.llF.pegawai_id }, 60000);
+      this.llBusy = false;
+      if (r.ok) {
+        this.ll = r; const p = this.pegawai.find((x) => x.pegawai_id === this.llF.pegawai_id); this.llPegNama = p ? p.nama : '';
+        const n = new Date(); this.dicetak = this.fmtTgl(ymd(n)) + ' ' + pad(n.getHours()) + '.' + pad(n.getMinutes());
+      } else if (r.code !== 'SESI_HABIS') this.llErr = r.message || 'Gagal memuat laporan lembur.';
+    },
+    openUm(r, ev) {
+      this.lastFocus = ev && ev.currentTarget; this.umErr = '';
+      this.um = { pegawai_id: r.pegawai_id, nama: r.nama, tanggal: r.tanggal, uraian: r.uraian || '' };
+      this.$nextTick(() => this.$refs.umFirst && this.$refs.umFirst.focus());
+    },
+    async saveUm() {
+      this.umErr = ''; this.umBusy = true;
+      const r = await this.api('admin_lembur_uraian', { pegawai_id: this.um.pegawai_id, tanggal: this.um.tanggal, uraian: this.um.uraian });
+      this.umBusy = false;
+      if (r.ok) { this.closeModal(); this.say('Uraian lembur disimpan.'); this.loadLaporanLembur(true); return; }
+      if (r.code !== 'SESI_HABIS') this.umErr = r.message || 'Gagal menyimpan uraian.';
+    },
+    csvLembur(jenis) {
+      const l = this.ll; if (!l) return;
+      const st = { LENGKAP: 'Lengkap', DIISI_ADMIN: 'Diisi admin', BELUM_DIISI: 'Uraian belum diisi' };
+      let head, rows;
+      if (jenis === 'rekap') {
+        head = ['Nama', 'Jabatan', 'Hari lembur', 'Total jam lembur', 'Uraian belum diisi'];
+        rows = l.rekap.map((r) => [r.nama, r.jabatan, r.hari, this.fmtMenit(r.menit), r.belum_uraian]);
+      } else {
+        head = ['Tanggal', 'Nama', 'Jabatan', 'Mulai', 'Selesai', 'Durasi', 'Uraian pekerjaan', 'Status', 'Catatan perintah'];
+        rows = l.detail.map((r) => [r.tanggal, r.nama, r.jabatan, r.jam_mulai, r.jam_selesai, this.fmtMenit(r.menit), r.uraian, st[r.status], r.catatan_perintah]);
+      }
+      const text = '﻿' + [head].concat(rows).map((r) => r.map(csvCell).join(';')).join('\r\n');
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
+      a.download = 'lembur-' + jenis + '-' + l.dari + '_' + l.sampai + '.csv'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    },
+
+    // --- posisi pegawai (peta)
+    initMap() {
+      if (this.map) { this.map.invalidateSize(); return; }
+      if (!window.L) { this.posErr = 'Peta tidak bisa dimuat (pustaka peta diblokir). Daftar posisi di bawah tetap tersedia.'; return; }
+      this.map = L.map(this.$refs.peta, { zoomControl: true }).setView([-2.5, 118], 5);
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; kontributor <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>' }).addTo(this.map);
+      this.layer = L.layerGroup().addTo(this.map); this.markers = {};
+    },
+    async loadPosisi() {
+      this.posBusy = true; this.posErr = '';
+      const body = {}; if (this.posDate) body.tanggal = this.posDate; if (this.posPeg) body.pegawai_id = this.posPeg;
+      const r = await this.api('admin_posisi', body);
+      this.posBusy = false;
+      if (r.ok) { this.posisi = r; this.posDate = r.tanggal; this.$nextTick(() => this.drawMap(true)); }
+      else if (r.code !== 'SESI_HABIS') this.posErr = r.message || 'Gagal memuat posisi.';
+    },
+    popupEl(r) {
+      const d = document.createElement('div'), b = document.createElement('b'); b.textContent = r.nama; d.appendChild(b);
+      const add = (t) => { d.appendChild(document.createElement('br')); d.appendChild(document.createTextNode(t)); };
+      add('Lapor pukul ' + this.fmt(r.jam) + ' · akurasi ±' + r.akurasi + ' m'); if (r.catatan) add(r.catatan);
+      return d;
+    },
+    drawMap(fit) {
+      if (!this.map || !this.posisi) return;
+      this.map.invalidateSize(); this.layer.clearLayers(); this.markers = {};
+      const pts = [], p = this.posisi, label = p.terakhir.length <= 25;
+      if (p.kantor) {
+        L.circle([p.kantor.lat, p.kantor.lng], { radius: p.kantor.radius, color: '#475569', weight: 2, dashArray: '6 6', fillOpacity: 0.05, interactive: false }).addTo(this.layer);
+        L.circleMarker([p.kantor.lat, p.kantor.lng], { radius: 5, color: '#475569', fillColor: '#475569', fillOpacity: 1 }).bindTooltip('Kantor', { direction: 'top' }).addTo(this.layer);
+        pts.push([p.kantor.lat, p.kantor.lng]);
+      }
+      p.terakhir.forEach((r) => {
+        if (r.akurasi > 0 && r.akurasi <= 1000) L.circle([r.lat, r.lng], { radius: r.akurasi, color: '#0D9488', weight: 1, fillOpacity: 0.08, interactive: false }).addTo(this.layer);
+        const m = L.circleMarker([r.lat, r.lng], { radius: 9, color: '#0B5B54', weight: 2, fillColor: '#0D9488', fillOpacity: 0.9 }).bindPopup(this.popupEl(r))
+          .bindTooltip(r.nama.split(' ')[0] + ' ' + this.fmt(r.jam), { permanent: label, direction: 'top', offset: [0, -8], className: 'pl' }).addTo(this.layer);
+        this.markers[r.pegawai_id] = m; pts.push([r.lat, r.lng]);
+      });
+      if (fit && pts.length) this.map.fitBounds(pts, { padding: [40, 40], maxZoom: 17 });
+    },
+    lihatDiPeta(r) {
+      if (!this.map) return;
+      const m = this.markers[r.pegawai_id]; this.map.setView([r.lat, r.lng], 17); if (m) m.openPopup();
+      this.$refs.peta.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    },
+    riwayatPos(r) { this.posPeg = r ? r.pegawai_id : ''; this.posNama = r ? r.nama : ''; this.loadPosisi(); },
+    linkMaps(r) { return 'https://www.google.com/maps?q=' + r.lat + ',' + r.lng; },
+
+    // --- kelola admin (data admin ada di masterAbsen)
+    async mapi(action, body) {
+      const r = await post(MASTER_URL, Object.assign({ action, token: this.session.token }, body));
+      if (!r.ok && r.code === 'SESI_HABIS') this.logout('Sesi berakhir atau akses Anda dicabut. Silakan masuk lagi.');
+      return r;
+    },
+    async loadAdmins() {
+      this.admBusy = true; this.admErr = '';
+      const r = await this.mapi('admin_list', {});
+      this.admBusy = false;
+      if (r.ok) { this.admins = r.admin; this.admAsli = r.saya_asli; this.admMaks = r.maks; } else if (r.code !== 'SESI_HABIS') this.admErr = r.message || 'Gagal memuat daftar admin.';
+    },
+    openAdm(ev) { this.lastFocus = ev && ev.currentTarget; this.amErr = {}; this.amMsg = ''; this.am = { nama: '', email: '', password: '' }; this.$nextTick(() => this.$refs.amFirst && this.$refs.amFirst.focus()); },
+    async saveAdm() {
+      this.amErr = {}; this.amMsg = ''; this.amBusy = true;
+      const r = await this.mapi('admin_add', this.am);
+      this.amBusy = false;
+      if (r.ok) { this.closeModal(); this.say('Admin ditambahkan. Sampaikan password awalnya langsung kepada yang bersangkutan.'); this.loadAdmins(); return; }
+      if (r.errors) { this.amErr = r.errors; return; }
+      if (r.code !== 'SESI_HABIS') this.amMsg = r.message || 'Gagal menambah admin.';
+    },
+    async cabutAdm(a) {
+      if (!window.confirm('Cabut akses admin ' + a.nama + ' (' + a.email + ')?\nYang bersangkutan langsung tidak bisa masuk atau mengelola kantor ini.')) return;
+      const r = await this.mapi('admin_remove', { admin_id: a.admin_id });
+      if (r.ok) { this.say('Akses admin dicabut.'); this.loadAdmins(); } else if (r.code !== 'SESI_HABIS') this.say(r.message || 'Gagal mencabut admin.', 'bad');
+    },
+    openPw(ev) { this.lastFocus = ev && ev.currentTarget; this.pwErr = {}; this.pwMsg = ''; this.pw = { password_lama: '', password_baru: '' }; this.$nextTick(() => this.$refs.pwFirst && this.$refs.pwFirst.focus()); },
+    async savePw() {
+      this.pwErr = {}; this.pwMsg = ''; this.pwBusy = true;
+      const r = await this.mapi('admin_password', this.pw);
+      this.pwBusy = false;
+      if (r.ok) { this.closeModal(); this.say('Password diganti.'); return; }
+      if (r.errors) this.pwErr = r.errors; else if (r.code !== 'SESI_HABIS') this.pwMsg = r.message || 'Gagal mengganti password.';
     },
 
     // --- foto & modal
@@ -742,7 +1179,7 @@ new Vue({
       else { this.$set(this.photoState, key, r.code === 'FOTO_TIDAK_ADA' ? 'none' : 'error'); this.$set(this.photoMsg, key, r.message || 'Foto gagal dimuat.'); }
     },
     closeModal() {
-      this.pm = this.sm = this.fm = null; document.body.style.overflow = '';
+      this.pm = this.sm = this.fm = this.am = this.pw = this.lbm = this.um = this.lkm = null; document.body.style.overflow = '';
       this.$nextTick(() => this.lastFocus && this.lastFocus.focus && this.lastFocus.focus());
     }
   }
