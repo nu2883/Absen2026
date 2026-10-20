@@ -170,7 +170,7 @@ figure.ph figcaption span{font-variant-numeric:tabular-nums;color:var(--mute)}
           <h1 class="hello">Halo, {{ firstName }}</h1>
           <div class="where">{{ tenant.nama_kantor }}</div>
         </div>
-        <button id="avatar" class="avatar" type="button" @click="logout($event)" aria-label="Keluar dari akun">{{ initials }}</button>
+        <button id="avatar" class="avatar" type="button" @click="askLogout($event)" aria-label="Keluar dari akun">{{ initials }}</button>
       </div>
       <div v-if="demo" class="banner demo" style="margin-top:14px">Mode contoh: data absen hanya tersimpan di perangkat ini.</div>
       <div v-for="n in notices" :key="n.id" class="banner bad" role="alert" style="margin-top:14px"><button class="x" type="button" aria-label="Tutup pemberitahuan" @click="dismissNotice(n.id)">×</button>{{ n.msg }}</div>
@@ -210,11 +210,12 @@ figure.ph figcaption span{font-variant-numeric:tabular-nums;color:var(--mute)}
         <button id="absenBtn" class="btn" :class="{alt: stage === 2}" type="button" :disabled="btnDisabled" @click="startClock">
           <span v-if="busy" class="spin" aria-hidden="true"></span>{{ btnLabel }}
         </button>
+        <div v-if="lemburTahan" id="lemburKunci" class="note" role="status" style="color:var(--warn);font-weight:700">Isi uraian pekerjaan lembur di bawah dulu, lalu tombol ini aktif.</div>
         <div class="note">{{ stage === 2 ? 'Lembur? Absen pulang lagi. Yang dipakai adalah jam pulang terakhir.' : 'Absen langsung tersimpan di HP, lalu dikirim otomatis. Selfie dicap waktu dan lokasi.' }}</div>
         <div v-if="askUraian && stage !== 0" class="uraian" id="uraianBox">
           <label for="uraian">Uraian pekerjaan lembur</label>
           <textarea id="uraian" class="txt" maxlength="300" v-model="uraian" placeholder="Mis. Menyusun laporan keuangan akhir bulan"></textarea>
-          <p class="hint">{{ stage === 1 ? 'Boleh diisi sekarang, sebelum absen pulang, atau menyusul dari Riwayat.' : 'Boleh diisi sekarang atau menyusul dari Riwayat.' }}</p>
+          <p class="hint">{{ stage === 1 ? 'Boleh diisi sekarang, sebelum absen pulang, atau menyusul dari Riwayat.' : 'Wajib diisi sebelum Absen Pulang Lagi (Lembur). Ketik uraian lalu tombol absen aktif, atau simpan dulu.' }}</p>
           <button v-if="stage === 2" id="uraianBtn" class="btn alt" type="button" :disabled="uraianBusy || !uraian.trim()" @click="simpanUraian(view.tanggal, uraian, 'main')">{{ uraianBusy ? 'Menyimpan…' : 'Simpan uraian' }}</button>
         </div>
         <div v-if="stage === 2 && view.uraian" id="uraianTersimpan" class="uraian-ok"><b>Uraian lembur{{ view.uraian_oleh === 'ADMIN' ? ' (diisi admin)' : '' }}</b>{{ view.uraian }}</div>
@@ -283,6 +284,18 @@ figure.ph figcaption span{font-variant-numeric:tabular-nums;color:var(--mute)}
           <label for="dUraianTeks">Uraian pekerjaan lembur</label>
           <textarea id="dUraianTeks" class="txt" maxlength="300" v-model="detailUraian" placeholder="Isi bila Anda lembur pada hari ini"></textarea>
           <button id="dUraianBtn" class="btn alt" type="button" :disabled="uraianBusy || !detailUraian.trim()" @click="simpanUraian(detail.tanggal, detailUraian, 'detail')">{{ uraianBusy ? 'Menyimpan…' : 'Simpan uraian' }}</button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="lgo" id="logoutDlg" class="modal" @click.self="closeLogout">
+      <div class="sheet" role="alertdialog" aria-modal="true" aria-labelledby="lgo-h" aria-describedby="lgo-d">
+        <h2 id="lgo-h" style="margin:0 0 8px;font-size:19px;font-weight:800">Keluar dari akun?</h2>
+        <p id="lgo-d" class="hint" style="margin:0 0 6px;font-size:15px;color:var(--ink)">Anda perlu memasukkan email dan PIN lagi untuk absen.</p>
+        <p v-if="pendClock.length" id="lgoQueue" class="banner bad" style="margin:10px 0 6px" role="alert">Masih ada {{ pendClock.length }} absen yang belum terkirim. Absen itu tetap aman di HP dan dikirim setelah Anda login lagi.</p>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px">
+          <button id="lgoCancel" ref="lgoCancel" class="btn" type="button" @click="closeLogout">Batal, tetap masuk</button>
+          <button id="lgoOk" class="btn alt" type="button" @click="confirmLogout">Ya, keluar</button>
         </div>
       </div>
     </div>
@@ -489,7 +502,7 @@ new Vue({
       email: '', pin: '', loginErr: { email: '', pin: '' }, loginMsg: '',
       today: {}, loc: { state: 'idle', lat: null, lng: null, acc: null },
       posCatatan: '', posBusy: false, posLast: '', posReq: null,
-      uraian: '', detailUraian: '', uraianBusy: false, jamStd: '', geoP: null, tick: Date.now(),
+      uraian: '', detailUraian: '', uraianBusy: false, lgo: false, jamStd: '', geoP: null, tick: Date.now(),
       queue: loadQueue(), notices: store.get(LS_NOTICE) || [], online: navigator.onLine !== false, flushing: false, timer: null,
       toast: { msg: '', kind: 'ok' }, toastTimer: null,
       month: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
@@ -515,7 +528,11 @@ new Vue({
     stage() { return !this.view.jam_masuk ? 0 : (!this.view.jam_pulang ? 1 : 2); },
     pill() { return [{ t: 'Belum absen masuk', bg: '#E4EAE8', fg: '#2F3F3B' }, { t: 'Sedang bekerja', bg: '#E1F2EF', fg: '#0B5B54' }, { t: 'Selesai hari ini', bg: '#E6F4EA', fg: '#1B5E34' }][this.stage]; },
     btnLabel() { return this.busy ? 'Menyimpan…' : ['Absen Masuk', 'Absen Pulang', 'Absen Pulang Lagi (Lembur)'][this.stage]; },
-    btnDisabled() { return this.busy || this.loc.state === 'loading'; },
+    // Absen pulang lagi (lembur) baru aktif setelah uraian lembur terisi: sudah tersimpan (pegawai atau admin) atau sudah diketik di kotak uraian.
+    // Absen pulang yang pertama tidak pernah dikunci, supaya pegawai tidak tertahan di kantor.
+    uraianTerisi() { return !!this.view.uraian || this.uraian.trim().length >= 3; },
+    lemburTahan() { return this.stage === 2 && this.askUraian && !this.uraianTerisi; },
+    btnDisabled() { return this.busy || this.loc.state === 'loading' || this.lemburTahan; },
     locTitle() { return ({ idle: 'Lokasi belum dicek', loading: 'Mencari lokasi…', ok: 'Lokasi siap', denied: 'Izin lokasi ditolak', error: 'Lokasi tidak ditemukan' })[this.loc.state]; },
     locSub() {
       if (this.loc.state === 'ok') return 'Akurasi GPS ' + Math.round(this.loc.acc) + ' m';
@@ -587,7 +604,18 @@ new Vue({
     // --- engine
     // Kirim ke engine milik kantor ini. Bila engine SIBUK atau tidak menjawab, minta engine
     // pengganti ke masterAbsen lalu ulangi permintaan yang sama (request_id sama = aman, tidak ganda).
+    // Sesi bergulir: selama pegawai aktif, server mengirim token baru (berlaku 48 jam lagi). Disimpan di sini
+    // supaya sesi baru berakhir 48 jam setelah terakhir dipakai.
     async engine(body, ms) {
+      const used = this.session && this.session.token;
+      const r = await this.engineRaw(body, ms);
+      if (r && r.token_baru) {
+        const t = r.token_baru; delete r.token_baru;
+        if (!DEMO && this.session && this.session.token === used) { this.session = Object.assign({}, this.session, { token: t }); store.set(LS_SESSION, this.session); }
+      }
+      return r;
+    },
+    async engineRaw(body, ms) {
       const call = () => {
         const p = Object.assign({ id_app: this.tenant.id_app, token: this.session && this.session.token }, body);
         return DEMO ? demoEngine(p) : post(this.tenant.engine_url, p, ms);
@@ -619,7 +647,20 @@ new Vue({
       this.session = { token: r.token, nama: r.nama, pegawai_id: r.pegawai_id };
       store.set(LS_SESSION, this.session); this.pin = ''; this.screen = 'main'; this.tab = 'absen'; this.enterMain();
     },
-    logout(ev) { if (ev && ev.type === 'click' && this.pendClock.length && !window.confirm('Ada absen yang belum terkirim. Absen tetap tersimpan di HP dan dikirim setelah Anda login lagi. Keluar sekarang?')) return; store.del(LS_SESSION); this.session = null; this.today = {}; this.history = []; this.email = ''; this.screen = 'login'; this.$nextTick(() => this.$refs.email && this.$refs.email.focus()); },
+    // Keluar atas kemauan pegawai selalu lewat dialog konfirmasi. logout() sendiri dipakai tanpa dialog
+    // hanya bila server menyatakan sesi habis.
+    askLogout(ev) {
+      this.lastFocus = ev && ev.currentTarget; this.lgo = true;
+      document.body.style.overflow = 'hidden'; document.addEventListener('keydown', this.onKeyLogout);
+      this.$nextTick(() => this.$refs.lgoCancel && this.$refs.lgoCancel.focus());
+    },
+    closeLogout() {
+      this.lgo = false; document.body.style.overflow = ''; document.removeEventListener('keydown', this.onKeyLogout);
+      this.$nextTick(() => this.lastFocus && this.lastFocus.focus && this.lastFocus.focus());
+    },
+    onKeyLogout(ev) { if (ev.key === 'Escape') this.closeLogout(); },
+    confirmLogout() { this.logout(); },
+    logout() { this.lgo = false; document.body.style.overflow = ''; document.removeEventListener('keydown', this.onKeyLogout); store.del(LS_SESSION); this.session = null; this.today = {}; this.history = []; this.email = ''; this.screen = 'login'; this.$nextTick(() => this.$refs.email && this.$refs.email.focus()); },
 
     // --- beranda
     async enterMain() { this.getLocation(); this.flush(true); await this.loadToday(); },
