@@ -555,6 +555,18 @@ figure.ph figcaption span{color:var(--mute);font-variant-numeric:tabular-nums}
         <p class="hint" style="text-align:right">Perubahan berlaku di semua server absensi dalam beberapa menit.</p>
       </form>
       <div v-else class="empty">{{ setErrLoad || 'Memuat pengaturan…' }}</div>
+      <div class="card" id="diagCard" style="margin-top:16px">
+        <div class="card-h"><div><h2>Diagnostik kecepatan</h2><p class="lead">Mengukur berapa lama server Google bekerja dan berapa lama perjalanan lewat jaringan. Hanya membaca, tidak mengubah data.</p></div><button id="diagBtn" class="btn sec sm" type="button" :disabled="diagBusy" @click="diagUkur">{{ diagBusy ? 'Mengukur…' : (diag ? 'Ukur lagi' : 'Ukur sekarang') }}</button></div>
+        <div v-if="diag" id="diagOut">
+          <div class="tw"><table id="diagTabel"><caption class="sr">Hasil pengukuran kecepatan</caption>
+            <thead><tr><th scope="col">Panggilan</th><th scope="col" class="num">Pertama</th><th scope="col" class="num">Berikutnya</th><th scope="col" class="num">Di server</th><th scope="col" class="num">Jaringan</th></tr></thead>
+            <tbody><tr v-for="d in diag.rows" :key="d.label"><td><b>{{ d.label }}</b><span v-if="d.err" class="hint" style="display:block;color:var(--bad)">{{ d.err }}</span></td>
+              <td class="num">{{ d.pertama === null ? '–' : d.pertama + ' ms' }}</td><td class="num">{{ d.biasa === null ? '–' : d.biasa + ' ms' }}</td><td class="num">{{ d.srv === null ? '–' : d.srv + ' ms' }}</td><td class="num">{{ d.jar === null ? '–' : d.jar + ' ms' }}</td></tr></tbody></table></div>
+          <p v-for="(k, i) in diag.catatan" :key="i" class="hint" :id="'diagCatatan' + i">{{ k }}</p>
+          <p class="hint">Pertama = panggilan awal (bisa kena mulai dingin). Berikutnya = nilai tengah tiga panggilan sesudahnya. Jaringan = total dikurangi waktu di server, sudah termasuk pengalihan Google.</p>
+          <div class="acts" style="justify-content:flex-start"><button id="diagCopy" class="btn sec sm" type="button" @click="diagSalin">{{ diagCopied ? 'Tersalin' : 'Salin hasil' }}</button></div>
+        </div>
+      </div>
     </section>
   </main>
 
@@ -733,7 +745,7 @@ new Vue({
         { id: 'admin', label: 'Admin', icon: '<path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>' },
         { id: 'pengaturan', label: 'Pengaturan', icon: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/>' }
       ],
-      lgo: false, copied: false, lokasiBelum: false, toast: { msg: '', kind: 'ok' }, toastTimer: null, lastFocus: null,
+      diag: null, diagBusy: false, diagCopied: false, lgo: false, copied: false, lokasiBelum: false, toast: { msg: '', kind: 'ok' }, toastTimer: null, lastFocus: null,
       dash: null, dashDate: '', dashBusy: false, dashErr: '', trenTabel: false, tip: null,
       lf2: { dari: ymd(new Date(now.getFullYear(), now.getMonth(), 1)), sampai: ymd(now), pegawai_id: '' },
       lap: null, lapBusy: false, lapErr: '', dicetak: '', lapPegNama: '',
@@ -811,6 +823,42 @@ new Vue({
       this.lgo = false; document.body.style.overflow = '';
       store.del(SS_KEY); this.session = null; this.dash = null; this.lap = null; this.pegawai = []; this.st = []; this.sf = null; this.fm = this.pm = this.sm = this.am = this.pw = this.lbm = this.um = this.lkm = null; this.posisi = null; this.admins = []; this.lokasi = []; this.lbList = []; this.ll = null;
       this.loginMsg = typeof msg === 'string' ? msg : ''; this.$nextTick(() => this.$refs.email && this.$refs.email.focus());
+    },
+    // Diagnostik kecepatan: ukur total di peramban (jam peramban) dan waktu kerja server (ms_srv dari jawaban).
+    async diagUkur() {
+      if (this.diagBusy || !this.session) return;
+      this.diagBusy = true; this.diag = null; this.diagCopied = false;
+      const s = this.session, med = (a) => { const b = a.slice().sort((x, y) => x - y); return b.length ? b[Math.floor((b.length - 1) / 2)] : null; };
+      const ukur = async (label, url, body) => {
+        const runs = []; let err = '', info = {};
+        for (let i = 0; i < 4; i++) {
+          const t0 = performance.now(); const r = await post(url, Object.assign({}, body), 30000); const total = Math.round(performance.now() - t0);
+          if (!r.ok) { err = r.message || r.code || 'Gagal'; break; }
+          info = r; runs.push({ total, srv: typeof r.ms_srv === 'number' ? Math.round(r.ms_srv) : null });
+        }
+        const rest = runs.slice(1), biasa = med(rest.map((x) => x.total)), srvs = rest.map((x) => x.srv).filter((x) => x !== null), srv = med(srvs);
+        return { label, err, info, pertama: runs.length ? runs[0].total : null, biasa, srv, jar: biasa !== null && srv !== null ? Math.max(0, biasa - srv) : null };
+      };
+      const rows = [];
+      if (s.engine_url) {
+        rows.push(await ukur('Engine, tanpa Spreadsheet', s.engine_url, { action: 'ping' }));
+        rows.push(await ukur('Engine, panggilan nyata (pengaturan)', s.engine_url, { action: 'admin_settings_get', id_app: s.id_app, token: s.token }));
+      }
+      rows.push(await ukur('Master (info)', MASTER_URL, { action: 'info' }));
+      const catatan = [], ping = rows.find((r) => /tanpa Spreadsheet/.test(r.label)), nyata = rows.find((r) => /nyata/.test(r.label)), master = rows.find((r) => /Master/.test(r.label));
+      if (ping && ping.info.engine_id) catatan.push('Engine: ' + ping.info.engine_id + ' versi ' + ping.info.version + '.' + (master && master.info.version ? ' Master versi ' + master.info.version + '.' : ''));
+      else if (master && master.info.version) catatan.push('Master versi ' + master.info.version + '.');
+      if (nyata && nyata.biasa !== null && nyata.srv !== null) catatan.push(nyata.srv > nyata.jar ? 'Waktu terbanyak ada di server (membuka dan membaca Spreadsheet): ' + nyata.srv + ' ms dari ' + nyata.biasa + ' ms.' : 'Waktu terbanyak ada di jaringan dan pengalihan Google: ' + nyata.jar + ' ms dari ' + nyata.biasa + ' ms. Server sendiri hanya ' + nyata.srv + ' ms.');
+      if (ping && ping.pertama !== null && ping.biasa !== null && ping.pertama - ping.biasa > 800) catatan.push('Panggilan pertama lebih lambat ' + (ping.pertama - ping.biasa) + ' ms dari berikutnya: engine sedang tidur (mulai dingin).');
+      if (nyata && ping && nyata.srv !== null && ping.srv !== null && nyata.srv - ping.srv > 300) catatan.push('Membuka Spreadsheet menambah sekitar ' + (nyata.srv - ping.srv) + ' ms dibanding panggilan kosong.');
+      this.diag = { rows, catatan, waktu: new Date().toLocaleString('id-ID') }; this.diagBusy = false;
+    },
+    diagSalin() {
+      const d = this.diag; if (!d) return;
+      const f = (v) => v === null ? '-' : v + ' ms';
+      const txt = ['Diagnostik kecepatan, ' + d.waktu].concat(d.rows.map((r) => r.label + ': pertama ' + f(r.pertama) + ', berikutnya ' + f(r.biasa) + ', server ' + f(r.srv) + ', jaringan ' + f(r.jar) + (r.err ? ' (galat: ' + r.err + ')' : ''))).concat(d.catatan).join('\n');
+      const done = () => { this.diagCopied = true; setTimeout(() => { this.diagCopied = false; }, 2000); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, () => {}); else done();
     },
     afterLogin() { this.loadDash(); this.loadSettings(true); },
     copyId() {
