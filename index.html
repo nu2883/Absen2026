@@ -345,7 +345,8 @@ function loadQueue() {
 // Catatan: layanan umum nominatim.openstreetmap.org dibatasi kebijakan pemakaian wajar. Untuk kantor besar, ganti GEO_URL
 // dengan penyedia sendiri/berbayar yang mengembalikan format Nominatim (jsonv2).
 const GEO_URL = 'https://nominatim.openstreetmap.org/reverse';
-const GEO_TIMEOUT_MS = 3000, LS_GEO = 'absen_geo';
+const GEO_TIMEOUT_MS = 3000, GEO_WAIT_MS = 1500, LS_GEO = 'absen_geo';
+const LS_TODAY = 'absen_today', LS_HIST = 'absen_hist';   // data terakhir untuk tampil seketika saat aplikasi dibuka
 function geoKey(lat, lng) { return lat.toFixed(3) + ',' + lng.toFixed(3); } // sekitar 110 m
 function geoFormat(j) {
   const a = (j && j.address) || {};
@@ -493,6 +494,9 @@ new Vue({
   el: '#app',
   data() {
     const tenant = store.get(LS_TENANT), sess = store.get(LS_SESSION);
+    // Tampil seketika: data hari ini terakhir (bila dari hari yang sama) dipakai dulu, server memperbarui di belakang layar.
+    const ct = tenant && sess ? store.get(LS_TODAY) : null;
+    const cacheToday = ct && ct.id_app === tenant.id_app && ct.pid === sess.pegawai_id && ct.local === ymd(new Date()) && ct.t && ct.t.tanggal ? ct : null;
     return {
       demo: DEMO,
       tenant: tenant || {}, session: tenant && sess ? sess : null,
@@ -500,7 +504,7 @@ new Vue({
       tab: 'absen', busy: false,
       idInput: '', idError: '',
       email: '', pin: '', loginErr: { email: '', pin: '' }, loginMsg: '',
-      today: {}, loc: { state: 'idle', lat: null, lng: null, acc: null },
+      today: cacheToday ? cacheToday.t : {}, todayLocal: cacheToday ? cacheToday.local : '', todayAt: 0, loc: { state: 'idle', lat: null, lng: null, acc: null }, locAt: 0, locP: null, warmed: false,
       posCatatan: '', posBusy: false, posLast: '', posReq: null,
       uraian: '', detailUraian: '', uraianBusy: false, lgo: false, jamStd: '', geoP: null, tick: Date.now(),
       queue: loadQueue(), notices: store.get(LS_NOTICE) || [], online: navigator.onLine !== false, flushing: false, timer: null,
@@ -532,7 +536,7 @@ new Vue({
     // Absen pulang yang pertama tidak pernah dikunci, supaya pegawai tidak tertahan di kantor.
     uraianTerisi() { return !!this.view.uraian || this.uraian.trim().length >= 3; },
     lemburTahan() { return this.stage === 2 && this.askUraian && !this.uraianTerisi; },
-    btnDisabled() { return this.busy || this.loc.state === 'loading' || this.lemburTahan; },
+    btnDisabled() { return this.busy || this.lemburTahan; }, // GPS yang masih mencari tidak menahan tombol: kamera dibuka dulu, lokasi ditunggu sesudah foto
     locTitle() { return ({ idle: 'Lokasi belum dicek', loading: 'Mencari lokasi…', ok: 'Lokasi siap', denied: 'Izin lokasi ditolak', error: 'Lokasi tidak ditemukan' })[this.loc.state]; },
     locSub() {
       if (this.loc.state === 'ok') return 'Akurasi GPS ' + Math.round(this.loc.acc) + ' m';
@@ -565,13 +569,14 @@ new Vue({
   mounted() {
     if (this.screen === 'id') this.$nextTick(() => this.$refs.idapp && this.$refs.idapp.focus());
     if (this.screen === 'main') this.enterMain();
+    if (this.screen === 'login') this.warm();
     // Antrean dicoba tiap beberapa detik; saat sinyal kembali atau aplikasi dibuka lagi, dicoba dengan jeda acak
     // supaya ribuan HP yang tersambung kembali bersamaan tidak menyerbu server di detik yang sama.
     this.timer = setInterval(() => this.flush(false), 4000);
     setInterval(() => { this.tick = Date.now(); }, 30000); // memperbarui isian uraian lembur saat jam pulang lewat
     window.addEventListener('online', () => { this.online = true; this.flushSoon(); });
     window.addEventListener('offline', () => { this.online = false; });
-    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { this.flushSoon(); this.tick = Date.now(); } });
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { this.flushSoon(); this.tick = Date.now(); this.onForeground(); } });
     window.addEventListener('focus', () => { this.tick = Date.now(); });
     this.$watch('idInput', () => { this.idError = ''; });
     this.$watch('email', () => { this.loginErr.email = ''; this.loginMsg = ''; });
@@ -597,9 +602,9 @@ new Vue({
       if (!r.ok) { this.idError = r.message || 'Terjadi kesalahan. Coba lagi.'; this.$refs.idapp.focus(); return; }
       this.tenant = { id_app: r.id_app, nama_kantor: r.nama_kantor, spreadsheet_id: r.spreadsheet_id, drive_folder_id: r.drive_folder_id, engine_id: r.engine_id, engine_url: r.engine_url };
       store.set(LS_TENANT, this.tenant);
-      this.screen = 'login'; this.$nextTick(() => this.$refs.email && this.$refs.email.focus());
+      this.screen = 'login'; this.warm(); this.$nextTick(() => this.$refs.email && this.$refs.email.focus());
     },
-    gantiKantor() { if (this.pendClock.length && !window.confirm('Ada absen yang belum terkirim. Absen tetap tersimpan di HP dan terkirim setelah Anda kembali ke kantor ini. Lanjut ganti kantor?')) return; store.del(LS_TENANT); store.del(LS_SESSION); this.tenant = {}; this.session = null; this.idInput = ''; this.screen = 'id'; this.$nextTick(() => this.$refs.idapp.focus()); },
+    gantiKantor() { if (this.pendClock.length && !window.confirm('Ada absen yang belum terkirim. Absen tetap tersimpan di HP dan terkirim setelah Anda kembali ke kantor ini. Lanjut ganti kantor?')) return; store.del(LS_TENANT); store.del(LS_SESSION); store.del(LS_TODAY); store.del(LS_HIST); this.tenant = {}; this.session = null; this.idInput = ''; this.screen = 'id'; this.$nextTick(() => this.$refs.idapp.focus()); },
 
     // --- engine
     // Kirim ke engine milik kantor ini. Bila engine SIBUK atau tidak menjawab, minta engine
@@ -645,7 +650,9 @@ new Vue({
       this.busy = false;
       if (!r.ok) { this.loginMsg = r.message || 'Email atau PIN salah.'; return; }
       this.session = { token: r.token, nama: r.nama, pegawai_id: r.pegawai_id };
-      store.set(LS_SESSION, this.session); this.pin = ''; this.screen = 'main'; this.tab = 'absen'; this.enterMain();
+      store.set(LS_SESSION, this.session); this.pin = ''; this.screen = 'main'; this.tab = 'absen';
+      const hi = r.hari_ini && r.hari_ini.ok ? r.hari_ini : null; if (hi) this.keepToday(hi); // login sudah membawa data hari ini: tidak perlu panggilan kedua
+      this.enterMain(!!hi);
     },
     // Keluar atas kemauan pegawai selalu lewat dialog konfirmasi. logout() sendiri dipakai tanpa dialog
     // hanya bila server menyatakan sesi habis.
@@ -660,23 +667,48 @@ new Vue({
     },
     onKeyLogout(ev) { if (ev.key === 'Escape') this.closeLogout(); },
     confirmLogout() { this.logout(); },
-    logout() { this.lgo = false; document.body.style.overflow = ''; document.removeEventListener('keydown', this.onKeyLogout); store.del(LS_SESSION); this.session = null; this.today = {}; this.history = []; this.email = ''; this.screen = 'login'; this.$nextTick(() => this.$refs.email && this.$refs.email.focus()); },
+    logout() { this.lgo = false; document.body.style.overflow = ''; document.removeEventListener('keydown', this.onKeyLogout); store.del(LS_SESSION); store.del(LS_TODAY); store.del(LS_HIST); this.session = null; this.today = {}; this.todayLocal = ''; this.history = []; this.email = ''; this.screen = 'login'; this.$nextTick(() => this.$refs.email && this.$refs.email.focus()); },
 
     // --- beranda
-    async enterMain() { this.getLocation(); this.flush(true); await this.loadToday(); },
+    async enterMain(skipToday) { this.getLocation(); this.flush(true); if (!skipToday) await this.loadToday(); },
+    // Simpan tampilan hari ini di HP supaya aplikasi berikutnya langsung tampil tanpa menunggu server.
+    keepToday(t) {
+      this.today = t; this.todayLocal = ymd(new Date()); this.todayAt = Date.now();
+      if (this.session && this.tenant.id_app) store.set(LS_TODAY, { id_app: this.tenant.id_app, pid: this.session.pegawai_id, local: this.todayLocal, t });
+    },
     async loadToday() {
+      this.todayAt = Date.now();
       const r = await this.engine({ action: 'today' });
-      if (r.ok) this.today = r;
+      if (r.ok) this.keepToday(r);
       else if (r.code === 'SESI_HABIS') { this.logout(); this.loginMsg = 'Sesi berakhir. Silakan login lagi.'; }
-      else this.say(r.message || 'Gagal memuat data hari ini.', 'bad');
+      else if (!(this.today.tanggal && RETRY_CODES.indexOf(r.code) !== -1)) this.say(r.message || 'Gagal memuat data hari ini.', 'bad'); // bila sudah ada data tersimpan, kendala jaringan tidak perlu diributkan
+    },
+    // Pemanasan: engine yang sedang tidur dibangunkan selagi pegawai mengetik PIN.
+    warm() { if (!DEMO && !this.warmed && this.tenant && this.tenant.engine_url) { this.warmed = true; post(this.tenant.engine_url, { action: 'ping' }, 10000); } },
+    // Aplikasi kembali ke layar: ganti hari -> tampilan hari lalu dibuang; data hari ini dan lokasi disegarkan di belakang layar.
+    onForeground() {
+      if (!this.session || this.screen !== 'main') return;
+      if (this.todayLocal && this.todayLocal !== ymd(new Date())) { this.today = {}; this.todayLocal = ''; store.del(LS_TODAY); this.todayAt = 0; }
+      if (!this.todayAt || Date.now() - this.todayAt > 300000) setTimeout(() => this.loadToday(), Math.random() * 3000);
+      if (this.loc.state === 'ok') { if (Date.now() - this.locAt > 60000) this.refreshLoc(); }
+      else if (this.loc.state !== 'loading') this.getLocation();
     },
     getLocation() {
-      if (!navigator.geolocation) { this.loc.state = 'error'; return; }
+      if (!navigator.geolocation) { this.loc.state = 'error'; return Promise.resolve(false); }
       this.loc.state = 'loading';
-      return new Promise((resolve) => navigator.geolocation.getCurrentPosition(
-        (p) => { this.loc = { state: 'ok', lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy, alamat: '' }; this.lookupAlamat(); resolve(true); },
+      const pr = new Promise((resolve) => navigator.geolocation.getCurrentPosition(
+        (p) => { this.loc = { state: 'ok', lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy, alamat: '' }; this.locAt = Date.now(); this.lookupAlamat(); resolve(true); },
         (e) => { this.loc.state = e.code === 1 ? 'denied' : 'error'; resolve(false); },
         { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }));
+      this.locP = pr; return pr;
+    },
+    // Penyegaran diam-diam: tampilan lokasi tidak berubah sampai titik baru didapat; bila gagal, titik lama tetap dipakai.
+    refreshLoc() {
+      if (!navigator.geolocation) return Promise.resolve(false);
+      const pr = new Promise((resolve) => navigator.geolocation.getCurrentPosition(
+        (p) => { this.loc = { state: 'ok', lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy, alamat: '' }; this.locAt = Date.now(); this.lookupAlamat(); resolve(true); },
+        () => resolve(false), { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }));
+      this.locP = pr; return pr;
     },
     // Alamat dicari di belakang layar; tidak pernah menahan absen.
     lookupAlamat() {
@@ -692,7 +724,7 @@ new Vue({
       this.uraianBusy = false;
       if (r.ok) {
         this.say('Uraian lembur tersimpan.');
-        if (this.today.tanggal === tanggal) this.today = Object.assign({}, this.today, { uraian: r.uraian, uraian_oleh: 'PEGAWAI' });
+        if (this.today.tanggal === tanggal) this.keepToday(Object.assign({}, this.today, { uraian: r.uraian, uraian_oleh: 'PEGAWAI' }));
         const row = this.history.filter((x) => x.tanggal === tanggal)[0]; if (row) { this.$set(row, 'uraian', r.uraian); this.$set(row, 'uraian_oleh', 'PEGAWAI'); }
         if (this.detail && this.detail.tanggal === tanggal) this.$set(this.detail, 'uraian', r.uraian);
         if (dari === 'main') this.uraian = ''; else this.detailUraian = '';
@@ -701,7 +733,10 @@ new Vue({
     },
     startClock() {
       if (this.stage === 2 && !window.confirm('Catat absen pulang lagi (lembur)?\nJam pulang terakhir Anda akan diganti dengan jam sekarang.')) return;
-      if (this.loc.state !== 'ok') { this.say('Lokasi belum siap. Aktifkan GPS lalu coba lagi.', 'bad'); this.getLocation(); return; }
+      // GPS yang masih mencari tidak menahan pegawai: kamera dibuka sekarang, lokasi ditunggu sesudah foto.
+      // Titik yang sudah agak lama disegarkan bersamaan dengan pengambilan foto, tanpa menambah waktu tunggu.
+      if (this.loc.state !== 'ok' && this.loc.state !== 'loading') { this.say('Lokasi belum siap. Aktifkan GPS lalu coba lagi.', 'bad'); this.getLocation(); return; }
+      if (this.loc.state === 'ok' && Date.now() - this.locAt > 20000) this.refreshLoc();
       this.$refs.selfie.value = ''; this.$refs.selfie.click(); // buka kamera depan; lanjut di onSelfie
     },
     // Absen = simpan dulu di HP (jam saat tombol ditekan), baru kirim. Pegawai tidak menunggu server
@@ -710,10 +745,13 @@ new Vue({
       const f = ev.target.files && ev.target.files[0]; if (!f) return;
       this.busy = true;
       try {
-        const now = new Date(), L = this.loc, tipe = this.stage === 0 ? 'masuk' : 'pulang';
+        const now = new Date(), tipe = this.stage === 0 ? 'masuk' : 'pulang'; // jam dicatat saat foto selesai, sebelum menunggu lokasi
+        if (this.locP) { const lp = this.locP; await Promise.race([lp, sleep(12000)]); if (this.locP === lp) this.locP = null; }
+        const L = this.loc;
+        if (L.state !== 'ok' || L.lat == null) { this.say('Lokasi belum siap. Aktifkan GPS lalu coba lagi.', 'bad'); this.busy = false; return; }
         // Jam dicatat saat ini juga. Alamat ditunggu paling lama ~3 detik; bila belum ada, absen jalan dengan koordinat saja.
         const nama = this.lokasiNama, uraian = tipe === 'pulang' ? this.uraian.trim().slice(0, 300) : '';
-        if (!L.alamat && this.geoP) { await Promise.race([this.geoP, sleep(GEO_TIMEOUT_MS)]); }
+        if (!L.alamat && this.geoP) { await Promise.race([this.geoP, sleep(GEO_WAIT_MS)]); }
         const alamat = this.loc.alamat || '';
         const lines = [
           HARI[now.getDay()] + ', ' + now.getDate() + ' ' + BULAN[now.getMonth()].slice(0, 3) + ' ' + now.getFullYear() + '  ' + pad(now.getHours()) + '.' + pad(now.getMinutes()) + '.' + pad(now.getSeconds()),
@@ -767,7 +805,7 @@ new Vue({
           if (!this.session) break; // logout selama mengirim
           if (r.ok) {
             if (q.phase === 'clock') {
-              this.today = Object.assign({}, this.today, r); q.tanggal = r.tanggal; // gabung: daftar lokasi dan jam pulang jadwal dari 'today' tetap ada q.tries = 0; q.next = 0;
+              this.keepToday(Object.assign({}, this.today, r)); q.tanggal = r.tanggal; q.tries = 0; q.next = 0; // gabung: daftar lokasi dan jam pulang jadwal dari 'today' tetap ada
               this.say((q.tipe === 'masuk' ? 'Absen masuk' : 'Absen pulang') + ' ' + this.fmt(q.jam) + ' berhasil dikirim.' + (r.tertunda ? ' Jam sesuai saat Anda menekan tombol.' : ''));
               if (q.foto) { q.phase = 'foto'; this.saveQueue(); i--; continue; } // foto langsung menyusul setelah jam tercatat
               this.queue.splice(this.queue.indexOf(q), 1);
@@ -796,7 +834,7 @@ new Vue({
       if (!ok) { this.posBusy = false; this.say('Lokasi belum siap. Aktifkan GPS lalu coba lagi.', 'bad'); return; }
       // request_id dipertahankan sampai berhasil, supaya ketukan ulang tidak membuat laporan ganda
       if (!this.posReq) this.posReq = rid();
-      if (!this.loc.alamat && this.geoP) await Promise.race([this.geoP, sleep(GEO_TIMEOUT_MS)]);
+      if (!this.loc.alamat && this.geoP) await Promise.race([this.geoP, sleep(GEO_WAIT_MS)]);
       const r = await this.engine({ action: 'lapor_posisi', request_id: this.posReq, lat: this.loc.lat, lng: this.loc.lng, akurasi: this.loc.acc, alamat: this.loc.alamat || '', catatan: this.posCatatan.trim() }, 30000);
       this.posBusy = false;
       if (r.ok) { this.posReq = null; this.posCatatan = ''; this.posLast = r.jam; this.say('Posisi dilaporkan pukul ' + this.fmt(r.jam) + '.'); }
@@ -828,12 +866,26 @@ new Vue({
       if (r.ok) { this.$set(this.photos, key, r.foto); this.$set(this.photoState, key, 'ok'); }
       else { this.$set(this.photoState, key, r.code === 'FOTO_TIDAK_ADA' ? 'none' : 'error'); this.$set(this.photoMsg, key, r.message || 'Foto gagal dimuat.'); }
     },
+    histPut(key, rows, std) {
+      if (!this.session) return;
+      let c = store.get(LS_HIST);
+      if (!c || c.id_app !== this.tenant.id_app || c.pid !== this.session.pegawai_id || !c.m || !Array.isArray(c.order)) c = { id_app: this.tenant.id_app, pid: this.session.pegawai_id, m: {}, order: [] };
+      c.m[key] = { rows, std }; c.order = c.order.filter((k) => k !== key).concat(key);
+      while (c.order.length > 4) delete c.m[c.order.shift()];
+      store.set(LS_HIST, c);
+    },
+    // Riwayat bulan yang pernah dibuka langsung tampil dari HP; server memperbarui di belakang layar.
     async loadHistory() {
-      this.histBusy = true; this.histErr = '';
-      const key = this.monthKey, r = await this.engine({ action: 'history', bulan: key });
+      this.histErr = '';
+      const key = this.monthKey, c = store.get(LS_HIST);
+      const cached = this.session && c && c.id_app === this.tenant.id_app && c.pid === this.session.pegawai_id && c.m && c.m[key] ? c.m[key] : null;
+      if (cached) { this.history = cached.rows.map((x) => Object.assign({}, x, { jam_pulang_std: cached.std })); this.jamStd = cached.std || this.jamStd; this.histBusy = false; } else this.histBusy = true;
+      const r = await this.engine({ action: 'history', bulan: key });
       if (key !== this.monthKey) return; // bulan sudah berganti
       this.histBusy = false;
-      if (r.ok) { this.history = (r.rows || []).map((x) => Object.assign({}, x, { jam_pulang_std: r.jam_pulang_std })); this.jamStd = r.jam_pulang_std || this.jamStd; } else { this.history = []; this.histErr = r.message || 'Gagal memuat riwayat.'; }
+      if (r.ok) { this.history = (r.rows || []).map((x) => Object.assign({}, x, { jam_pulang_std: r.jam_pulang_std })); this.jamStd = r.jam_pulang_std || this.jamStd; this.histPut(key, r.rows || [], r.jam_pulang_std); }
+      else if (r.code === 'SESI_HABIS') { this.logout(); this.loginMsg = 'Sesi berakhir. Silakan login lagi.'; }
+      else if (!cached) { this.history = []; this.histErr = r.message || 'Gagal memuat riwayat.'; }
     }
   }
 });
