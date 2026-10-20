@@ -204,7 +204,7 @@ figure.ph figcaption span{color:var(--mute);font-variant-numeric:tabular-nums}
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" v-html="m.icon"></svg>{{ m.label }}
       </button>
     </nav>
-    <div class="foot"><div><b>{{ session.nama }}</b>{{ session.email }}</div><button id="logout" class="btn sec sm" type="button" @click="logout">Keluar</button></div>
+    <div class="foot"><div><b>{{ session.nama }}</b>{{ session.email }}</div><button id="logout" class="btn sec sm" type="button" @click="askLogout($event)">Keluar</button></div>
   </aside>
 
   <main class="main">
@@ -559,6 +559,12 @@ figure.ph figcaption span{color:var(--mute);font-variant-numeric:tabular-nums}
   </main>
 
   <!-- ===== MODAL PEGAWAI ===== -->
+  <div v-if="lgo" id="logoutDlg" class="modal" @click.self="closeModal"><div class="sheet" role="alertdialog" aria-modal="true" aria-labelledby="lgo-h" aria-describedby="lgo-d">
+    <div class="sheet-h"><h2 id="lgo-h">Keluar dari akun admin?</h2></div>
+    <p id="lgo-d" style="margin:6px 0 0">Anda perlu memasukkan email dan password lagi untuk masuk. Data kantor tidak berubah.</p>
+    <div class="acts"><button id="lgoCancel" ref="lgoCancel" class="btn sec" type="button" @click="closeModal">Batal, tetap masuk</button><button id="lgoOk" class="btn" type="button" @click="logout()">Ya, keluar</button></div>
+  </div></div>
+
   <div v-if="pm" class="modal" @click.self="closeModal"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="pm-h">
     <div class="sheet-h"><h2 id="pm-h">{{ pm.pegawai_id ? 'Ubah pegawai' : 'Tambah pegawai' }}</h2><button class="xbtn" type="button" @click="closeModal" aria-label="Tutup"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <form @submit.prevent="savePeg" novalidate>
@@ -681,10 +687,12 @@ const SS_KEY = 'absen_admin';
 const BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 const HARI = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
 
+// Sesi admin disimpan di localStorage supaya tidak hilang saat tab/peramban ditutup. Server yang menentukan
+// habisnya sesi: 48 jam setelah terakhir aktif. Di komputer bersama, pakai tombol Keluar.
 const store = {
-  get(k) { try { return JSON.parse(sessionStorage.getItem(k)); } catch (e) { return null; } },
-  set(k, v) { try { sessionStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
-  del(k) { try { sessionStorage.removeItem(k); } catch (e) {} }
+  get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} }
 };
 const pad = (n) => String(n).padStart(2, '0');
 const ymd = (d) => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
@@ -725,7 +733,7 @@ new Vue({
         { id: 'admin', label: 'Admin', icon: '<path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>' },
         { id: 'pengaturan', label: 'Pengaturan', icon: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/>' }
       ],
-      copied: false, lokasiBelum: false, toast: { msg: '', kind: 'ok' }, toastTimer: null, lastFocus: null,
+      lgo: false, copied: false, lokasiBelum: false, toast: { msg: '', kind: 'ok' }, toastTimer: null, lastFocus: null,
       dash: null, dashDate: '', dashBusy: false, dashErr: '', trenTabel: false, tip: null,
       lf2: { dari: ymd(new Date(now.getFullYear(), now.getMonth(), 1)), sampai: ymd(now), pegawai_id: '' },
       lap: null, lapBusy: false, lapErr: '', dicetak: '', lapPegNama: '',
@@ -771,7 +779,7 @@ new Vue({
     if (this.session) this.afterLogin(); else this.$nextTick(() => this.$refs.email && this.$refs.email.focus());
     this.$watch('lf.email', () => { this.loginErr.email = ''; this.loginMsg = ''; });
     this.$watch('lf.password', () => { this.loginErr.password = ''; this.loginMsg = ''; });
-    document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && (this.pm || this.sm || this.fm || this.am || this.pw || this.lbm || this.um || this.lkm)) this.closeModal(); });
+    document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && (this.pm || this.sm || this.fm || this.am || this.pw || this.lbm || this.um || this.lkm || this.lgo)) this.closeModal(); });
   },
   methods: {
     fmt(t) { return t ? String(t).replace(':', '.') : '–'; },
@@ -794,7 +802,13 @@ new Vue({
       this.session = { token: r.token, nama: r.nama, email: r.email, id_app: r.id_app, nama_kantor: r.nama_kantor, engine_id: r.engine_id, engine_url: r.engine_url, admin_id: r.admin_id, role: r.role };
       store.set(SS_KEY, this.session); this.view = 'dashboard'; this.afterLogin();
     },
+    // Keluar atas kemauan admin selalu lewat dialog konfirmasi; logout() dipakai langsung hanya bila sesi habis.
+    askLogout(ev) {
+      this.lastFocus = ev && ev.currentTarget; this.lgo = true; document.body.style.overflow = 'hidden';
+      this.$nextTick(() => this.$refs.lgoCancel && this.$refs.lgoCancel.focus());
+    },
     logout(msg) {
+      this.lgo = false; document.body.style.overflow = '';
       store.del(SS_KEY); this.session = null; this.dash = null; this.lap = null; this.pegawai = []; this.st = []; this.sf = null; this.fm = this.pm = this.sm = this.am = this.pw = this.lbm = this.um = this.lkm = null; this.posisi = null; this.admins = []; this.lokasi = []; this.lbList = []; this.ll = null;
       this.loginMsg = typeof msg === 'string' ? msg : ''; this.$nextTick(() => this.$refs.email && this.$refs.email.focus());
     },
@@ -805,8 +819,14 @@ new Vue({
     },
 
     // --- panggilan ke engine (dengan pengalihan bila engine sibuk)
+    // Sesi bergulir: server mengirim token baru selama admin aktif (berlaku 48 jam lagi).
+    renew(r, used) {
+      if (!r || !r.token_baru) return;
+      const t = r.token_baru; delete r.token_baru;
+      if (this.session && this.session.token === used) { this.session.token = t; store.set(SS_KEY, this.session); }
+    },
     async api(action, body, ms) {
-      const s = this.session;
+      const s = this.session, used = s.token;
       const call = () => s.engine_url ? post(s.engine_url, Object.assign({ action, id_app: s.id_app, token: s.token }, body), ms) : Promise.resolve({ ok: false, code: 'SIBUK' });
       const ramai = { ok: false, code: 'SIBUK', message: 'Server sedang ramai. Coba lagi dalam beberapa saat.' };
       let r = await call();
@@ -817,6 +837,7 @@ new Vue({
         s.engine_id = rr.engine_id; s.engine_url = rr.engine_url; store.set(SS_KEY, s);
         r = await call();
       }
+      this.renew(r, used);
       if (!r.ok && r.code === 'SESI_HABIS') { this.logout('Sesi berakhir. Silakan masuk lagi.'); }
       return r.code === 'SIBUK' ? ramai : r;
     },
@@ -1130,7 +1151,9 @@ new Vue({
 
     // --- kelola admin (data admin ada di masterAbsen)
     async mapi(action, body) {
-      const r = await post(MASTER_URL, Object.assign({ action, token: this.session.token }, body));
+      const used = this.session.token;
+      const r = await post(MASTER_URL, Object.assign({ action, token: used }, body));
+      this.renew(r, used);
       if (!r.ok && r.code === 'SESI_HABIS') this.logout('Sesi berakhir atau akses Anda dicabut. Silakan masuk lagi.');
       return r;
     },
@@ -1179,7 +1202,7 @@ new Vue({
       else { this.$set(this.photoState, key, r.code === 'FOTO_TIDAK_ADA' ? 'none' : 'error'); this.$set(this.photoMsg, key, r.message || 'Foto gagal dimuat.'); }
     },
     closeModal() {
-      this.pm = this.sm = this.fm = this.am = this.pw = this.lbm = this.um = this.lkm = null; document.body.style.overflow = '';
+      this.pm = this.sm = this.fm = this.am = this.pw = this.lbm = this.um = this.lkm = null; this.lgo = false; document.body.style.overflow = '';
       this.$nextTick(() => this.lastFocus && this.lastFocus.focus && this.lastFocus.focus());
     }
   }
