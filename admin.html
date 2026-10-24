@@ -277,7 +277,7 @@ figure.ph figcaption span{color:var(--mute);font-variant-numeric:tabular-nums}
             <thead><tr><th scope="col">Nama</th><th scope="col">Masuk</th><th scope="col">Pulang</th><th scope="col">Status</th><th scope="col">Keterangan</th><th scope="col" class="num">Lembur</th><th scope="col" class="noprint">Foto</th></tr></thead>
             <tbody><tr v-for="r in dash.kehadiran" :key="r.pegawai_id">
               <td><b>{{ r.nama }}</b><div style="font-size:12.5px;color:var(--mute)">{{ r.jabatan }}</div><div v-if="r.lokasi_masuk" style="font-size:12.5px;color:var(--mute)">{{ r.lokasi_masuk }}</div></td><td>{{ fmt(r.jam_masuk) }}</td><td>{{ fmt(r.jam_pulang) }}</td>
-              <td><span class="tag" :class="r.status === 'TERLAMBAT' ? 'late' : 'ok'">{{ r.status === 'TERLAMBAT' ? 'Terlambat' : 'Tepat waktu' }}</span></td>
+              <td><span class="tag" :class="r.status === 'TERLAMBAT' ? 'late' : (r.status === 'LIBUR' ? 'run' : 'ok')">{{ r.status === 'TERLAMBAT' ? 'Terlambat' : (r.status === 'LIBUR' ? 'Hari libur' : 'Tepat waktu') }}</span><span v-if="r.perintah_jam" class="hint" style="margin-left:6px">Perintah {{ r.perintah_jam }}</span></td>
               <td>{{ r.keterangan || '–' }}</td><td class="num">{{ r.lembur_menit ? fmtMenit(r.lembur_menit) : '–' }}<div v-if="r.larut_tanpa_perintah" class="hint" style="margin:2px 0 0;white-space:normal">larut {{ fmtMenit(r.larut_tanpa_perintah) }}, tanpa perintah</div></td>
               <td class="noprint"><button class="btn sec sm" type="button" @click="openFoto({tanggal: dash.tanggal, pegawai_id: r.pegawai_id, nama: r.nama, jam_masuk: r.jam_masuk, jam_pulang: r.jam_pulang, foto_masuk: r.foto_masuk, foto_pulang: r.foto_pulang, lokasi_masuk: r.lokasi_masuk, lokasi_pulang: r.lokasi_pulang, alamat_masuk: r.alamat_masuk, alamat_pulang: r.alamat_pulang}, $event)">Lihat foto</button></td>
             </tr></tbody></table></div>
@@ -315,6 +315,7 @@ figure.ph figcaption span{color:var(--mute);font-variant-numeric:tabular-nums}
             <div class="kpi"><div class="n">{{ lap.total.pegawai }}</div><div class="l">Pegawai</div></div>
             <div class="kpi"><div class="n">{{ lap.total.hadir }}</div><div class="l">Total kehadiran</div></div>
             <div class="kpi"><div class="n">{{ lap.total.terlambat }}</div><div class="l">Terlambat</div></div>
+            <div class="kpi"><div class="n">{{ lap.total.hadir_libur || 0 }}</div><div class="l">Hadir di hari libur</div></div>
             <div class="kpi"><div class="n">{{ lap.total.alpa }}</div><div class="l">Tanpa keterangan</div></div>
             <div class="kpi"><div class="n">{{ lap.total.dinas_luar }}</div><div class="l">Dinas luar</div></div>
             <div class="kpi"><div class="n">{{ fmtMenit(lap.total.lembur_menit) }}</div><div class="l">Total lembur</div></div>
@@ -323,15 +324,15 @@ figure.ph figcaption span{color:var(--mute);font-variant-numeric:tabular-nums}
           <h2 style="margin-bottom:10px">Rekap per pegawai</h2>
           <div v-if="!lap.rekap.length" class="empty">Tidak ada pegawai pada laporan ini.</div>
           <div v-else class="tw"><table id="rekapTabel"><caption class="sr">Rekap kehadiran per pegawai</caption>
-            <thead><tr><th scope="col">Nama</th><th scope="col">Jabatan</th><th scope="col" class="num">Hari kerja</th><th scope="col" class="num">Hadir</th><th scope="col" class="num">Tepat</th><th scope="col" class="num">Terlambat</th><th scope="col" class="num">Tanpa ket.</th><th scope="col" class="num">Dinas luar</th><th scope="col" class="num">ST tanpa absen</th><th scope="col" class="num">Tanpa pulang</th><th scope="col" class="num">Total jam</th><th scope="col" class="num">Lembur</th><th scope="col" class="num">Rata² masuk</th></tr></thead>
-            <tbody><tr v-for="r in lap.rekap" :key="r.pegawai_id"><td><b>{{ r.nama }}</b></td><td>{{ r.jabatan || '–' }}</td><td class="num">{{ r.hari_kerja }}</td><td class="num">{{ r.hadir }}</td><td class="num">{{ r.tepat }}</td><td class="num">{{ r.terlambat }}</td><td class="num">{{ r.alpa }}</td><td class="num">{{ r.dinas_luar }}</td><td class="num">{{ r.dinas_tanpa_absen }}</td><td class="num">{{ r.tanpa_pulang }}</td><td class="num">{{ fmtMenit(r.total_menit) }}</td><td class="num">{{ fmtMenit(r.lembur_menit) }}</td><td class="num">{{ fmt(r.rata_jam_masuk) }}</td></tr></tbody></table></div>
+            <thead><tr><th scope="col">Nama</th><th scope="col">Jabatan</th><th scope="col" class="num">Hari kerja</th><th scope="col" class="num">Hadir</th><th scope="col" class="num">Tepat</th><th scope="col" class="num">Terlambat</th><th scope="col" class="num">Tanpa ket.</th><th scope="col" class="num">Dinas luar</th><th scope="col" class="num">ST tanpa absen</th><th scope="col" class="num">Tanpa pulang</th><th scope="col" class="num">Total jam</th><th scope="col" class="num">Lembur</th><th scope="col" class="num">Hadir libur</th><th scope="col" class="num">Lembur libur</th><th scope="col" class="num">Rata² masuk</th></tr></thead>
+            <tbody><tr v-for="r in lap.rekap" :key="r.pegawai_id"><td><b>{{ r.nama }}</b></td><td>{{ r.jabatan || '–' }}</td><td class="num">{{ r.hari_kerja }}</td><td class="num">{{ r.hadir }}</td><td class="num">{{ r.tepat }}</td><td class="num">{{ r.terlambat }}</td><td class="num">{{ r.alpa }}</td><td class="num">{{ r.dinas_luar }}</td><td class="num">{{ r.dinas_tanpa_absen }}</td><td class="num">{{ r.tanpa_pulang }}</td><td class="num">{{ fmtMenit(r.total_menit) }}</td><td class="num">{{ fmtMenit(r.lembur_menit) }}</td><td class="num">{{ r.hadir_libur || '–' }}</td><td class="num">{{ r.lembur_libur_menit ? fmtMenit(r.lembur_libur_menit) : '–' }}</td><td class="num">{{ fmt(r.rata_jam_masuk) }}</td></tr></tbody></table></div>
           <p class="hint">“Tanpa ket.” = hari kerja tanpa absen dan tanpa Surat Tugas, tidak termasuk hari libur dan hari sebelum pegawai terdaftar. Lembur dihitung dari jam pulang terakhir dikurangi jam pulang standar, hanya pada tanggal yang ada perintah lembur (menu Lembur).</p>
 
           <h2 class="pb" style="margin:22px 0 10px">Rincian harian</h2>
           <div v-if="!lap.detail.length" class="empty" id="detailKosong">Tidak ada data absensi pada rentang ini.</div>
           <div v-else class="tw"><table id="detailTabel"><caption class="sr">Rincian absensi harian</caption>
             <thead><tr><th scope="col">Tanggal</th><th scope="col">Nama</th><th scope="col">Masuk</th><th scope="col">Pulang</th><th scope="col" class="num">Durasi</th><th scope="col" class="num">Lembur</th><th scope="col">Status</th><th scope="col">Keterangan</th><th scope="col">Lokasi</th><th scope="col" class="noprint">Foto</th></tr></thead>
-            <tbody><tr v-for="r in lap.detail" :key="r.tanggal + r.pegawai_id"><td>{{ fmtTgl(r.tanggal) }}</td><td>{{ r.nama }}</td><td>{{ fmt(r.jam_masuk) }}</td><td>{{ fmt(r.jam_pulang) }}</td><td class="num">{{ r.durasi_menit === null || r.durasi_menit === undefined ? '–' : fmtMenit(r.durasi_menit) }}</td><td class="num">{{ r.lembur_menit ? fmtMenit(r.lembur_menit) : '–' }}</td><td><span class="tag" :class="!r.jam_masuk ? 'na' : (r.status === 'TERLAMBAT' ? 'late' : 'ok')">{{ !r.jam_masuk ? 'Tidak hadir' : (r.status === 'TERLAMBAT' ? 'Terlambat' : 'Tepat waktu') }}</span></td><td>{{ r.keterangan || '–' }}</td><td style="white-space:normal;min-width:150px">{{ r.lokasi_masuk || '–' }}<div v-if="r.alamat_masuk" class="hint" style="margin:2px 0 0">{{ r.alamat_masuk }} (perkiraan)</div></td><td class="noprint"><button class="btn sec sm" type="button" @click="openFoto(r, $event)">Foto</button></td></tr></tbody></table></div>
+            <tbody><tr v-for="r in lap.detail" :key="r.tanggal + r.pegawai_id"><td>{{ fmtTgl(r.tanggal) }}</td><td>{{ r.nama }}</td><td>{{ fmt(r.jam_masuk) }}</td><td>{{ fmt(r.jam_pulang) }}</td><td class="num">{{ r.durasi_menit === null || r.durasi_menit === undefined ? '–' : fmtMenit(r.durasi_menit) }}</td><td class="num">{{ r.lembur_menit ? fmtMenit(r.lembur_menit) : '–' }}</td><td><span class="tag" :class="!r.jam_masuk ? 'na' : (r.status === 'TERLAMBAT' ? 'late' : (r.status === 'LIBUR' ? 'run' : 'ok'))">{{ !r.jam_masuk ? 'Tidak hadir' : (r.status === 'TERLAMBAT' ? 'Terlambat' : (r.status === 'LIBUR' ? 'Hari libur' : 'Tepat waktu')) }}</span></td><td>{{ r.keterangan || '–' }}</td><td style="white-space:normal;min-width:150px">{{ r.lokasi_masuk || '–' }}<div v-if="r.alamat_masuk" class="hint" style="margin:2px 0 0">{{ r.alamat_masuk }} (perkiraan)</div></td><td class="noprint"><button class="btn sec sm" type="button" @click="openFoto(r, $event)">Foto</button></td></tr></tbody></table></div>
         </div>
       </template>
     </section>
@@ -369,7 +370,7 @@ figure.ph figcaption span{color:var(--mute);font-variant-numeric:tabular-nums}
 
     <!-- ===== LEMBUR ===== -->
     <section v-show="view === 'lembur'" aria-labelledby="h-lem">
-      <div class="page-h noprint"><div><h1 id="h-lem">Lembur</h1><p class="lead">Catat perintah lembur per tanggal untuk pegawai tertentu. Lembur dihitung dari jam pulang standar sampai absen pulang terakhir, dan hanya bila ada perintah.</p></div><button id="lbAdd" class="btn" type="button" @click="openLbm(null, $event)">+ Catat perintah lembur</button></div>
+      <div class="page-h noprint"><div><h1 id="h-lem">Lembur</h1><p class="lead">Catat perintah lembur per tanggal untuk pegawai tertentu. Lembur hanya dihitung bila ada perintah. Hari kerja dihitung dari jam pulang standar; Sabtu, Minggu, dan hari libur pegawai boleh absen di mana saja, dan dihitung lembur hanya selama perintah berlaku (isi jam mulai/selesai untuk membatasi).</p></div><button id="lbAdd" class="btn" type="button" @click="openLbm(null, $event)">+ Catat perintah lembur</button></div>
       <div class="seg noprint" role="group" aria-label="Tampilan lembur">
         <button id="lemTabPerintah" type="button" :aria-pressed="lemTab === 'perintah'" @click="lemTab = 'perintah'">Perintah lembur</button>
         <button id="lemTabLaporan" type="button" :aria-pressed="lemTab === 'laporan'" @click="lemTab = 'laporan'; if (!ll) loadLaporanLembur()">Laporan lembur</button>
@@ -390,8 +391,8 @@ figure.ph figcaption span{color:var(--mute);font-variant-numeric:tabular-nums}
           <div v-if="lbBusy && !lbList.length" class="empty">Memuat perintah lembur…</div>
           <div v-else-if="!lbList.length" class="empty" id="lbKosong">Belum ada perintah lembur pada rentang ini.</div>
           <div v-else class="tw"><table id="lbTabel"><caption class="sr">Daftar perintah lembur</caption>
-            <thead><tr><th scope="col">Tanggal</th><th scope="col">Pegawai</th><th scope="col">Catatan</th><th scope="col">Status</th><th scope="col"><span class="sr">Aksi</span></th></tr></thead>
-            <tbody><tr v-for="r in lbList" :key="r.lembur_id"><td>{{ fmtTgl(r.tanggal) }}</td><td><b>{{ r.nama }}</b></td><td style="white-space:normal;min-width:160px">{{ r.catatan || '–' }}</td>
+            <thead><tr><th scope="col">Tanggal</th><th scope="col">Pegawai</th><th scope="col">Jam perintah</th><th scope="col">Catatan</th><th scope="col">Status</th><th scope="col"><span class="sr">Aksi</span></th></tr></thead>
+            <tbody><tr v-for="r in lbList" :key="r.lembur_id"><td>{{ fmtTgl(r.tanggal) }}</td><td><b>{{ r.nama }}</b></td><td>{{ jamPerintah(r) }} <span v-if="r.libur" class="tag run">Hari libur</span></td><td style="white-space:normal;min-width:160px">{{ r.catatan || '–' }}</td>
               <td><span class="tag" :class="r.status === 'AKTIF' ? 'ok' : 'bad'">{{ r.status === 'AKTIF' ? 'Berlaku' : 'Dibatalkan' }}</span></td>
               <td><button v-if="r.status === 'AKTIF'" class="btn danger sm" type="button" @click="lbStatus(r, 'BATAL')">Batalkan</button><button v-else class="btn sec sm" type="button" @click="lbStatus(r, 'AKTIF')">Aktifkan lagi</button></td></tr></tbody></table></div>
         </div>
@@ -424,6 +425,8 @@ figure.ph figcaption span{color:var(--mute);font-variant-numeric:tabular-nums}
               <div class="kpi"><div class="n">{{ ll.total.pegawai }}</div><div class="l">Pegawai lembur</div></div>
               <div class="kpi"><div class="n">{{ ll.total.hari }}</div><div class="l">Hari lembur</div></div>
               <div class="kpi"><div class="n" id="llTotal">{{ fmtMenit(ll.total.menit) }}</div><div class="l">Total jam lembur</div></div>
+              <div class="kpi"><div class="n">{{ ll.total.hari_libur || 0 }}</div><div class="l">Hari lembur di hari libur</div></div>
+              <div class="kpi"><div class="n">{{ fmtMenit(ll.total.menit_libur || 0) }}</div><div class="l">Jam lembur hari libur</div></div>
               <div class="kpi"><div class="n">{{ ll.total.belum_uraian }}</div><div class="l">Uraian belum diisi</div></div>
               <div class="kpi"><div class="n">{{ ll.total.larut_tanpa_perintah }}</div><div class="l">Larut tanpa perintah</div></div>
             </div>
@@ -431,15 +434,15 @@ figure.ph figcaption span{color:var(--mute);font-variant-numeric:tabular-nums}
             <h2 style="margin-bottom:10px">Rekap per pegawai</h2>
             <div v-if="!ll.rekap.length" class="empty" id="llKosong">Belum ada lembur yang masuk hitungan pada rentang ini.</div>
             <div v-else class="tw"><table id="llRekap"><caption class="sr">Rekap lembur per pegawai</caption>
-              <thead><tr><th scope="col">Nama</th><th scope="col">Jabatan</th><th scope="col" class="num">Hari</th><th scope="col" class="num">Total jam lembur</th><th scope="col" class="num">Uraian belum diisi</th></tr></thead>
-              <tbody><tr v-for="r in ll.rekap" :key="r.pegawai_id"><td><b>{{ r.nama }}</b></td><td>{{ r.jabatan || '–' }}</td><td class="num">{{ r.hari }}</td><td class="num">{{ fmtMenit(r.menit) }}</td><td class="num">{{ r.belum_uraian || '–' }}</td></tr></tbody></table></div>
+              <thead><tr><th scope="col">Nama</th><th scope="col">Jabatan</th><th scope="col" class="num">Hari</th><th scope="col" class="num">Total jam lembur</th><th scope="col" class="num">Hari libur</th><th scope="col" class="num">Jam hari libur</th><th scope="col" class="num">Uraian belum diisi</th></tr></thead>
+              <tbody><tr v-for="r in ll.rekap" :key="r.pegawai_id"><td><b>{{ r.nama }}</b></td><td>{{ r.jabatan || '–' }}</td><td class="num">{{ r.hari }}</td><td class="num">{{ fmtMenit(r.menit) }}</td><td class="num">{{ r.hari_libur || '–' }}</td><td class="num">{{ r.menit_libur ? fmtMenit(r.menit_libur) : '–' }}</td><td class="num">{{ r.belum_uraian || '–' }}</td></tr></tbody></table></div>
 
             <h2 class="pb" style="margin:22px 0 10px">Rincian lembur</h2>
             <div v-if="!ll.detail.length" class="empty">Tidak ada rincian.</div>
             <div v-else class="tw"><table id="llDetail"><caption class="sr">Rincian lembur harian</caption>
               <thead><tr><th scope="col">Tanggal</th><th scope="col">Nama</th><th scope="col">Mulai</th><th scope="col">Selesai</th><th scope="col" class="num">Durasi</th><th scope="col">Uraian pekerjaan</th><th scope="col">Status</th><th scope="col" class="noprint"><span class="sr">Aksi</span></th></tr></thead>
-              <tbody><tr v-for="r in ll.detail" :key="r.tanggal + r.pegawai_id"><td>{{ fmtTgl(r.tanggal) }}</td><td><b>{{ r.nama }}</b></td><td>{{ fmt(r.jam_mulai) }}</td><td>{{ fmt(r.jam_selesai) }}</td><td class="num">{{ fmtMenit(r.menit) }}</td>
-                <td style="white-space:normal;min-width:200px">{{ r.uraian || '–' }}<div v-if="r.catatan_perintah" class="hint" style="margin:2px 0 0">Perintah: {{ r.catatan_perintah }}</div></td>
+              <tbody><tr v-for="r in ll.detail" :key="r.tanggal + r.pegawai_id"><td>{{ fmtTgl(r.tanggal) }}</td><td><b>{{ r.nama }}</b><span v-if="r.libur" class="tag run" style="margin-left:6px">Libur</span></td><td>{{ fmt(r.jam_mulai) }}</td><td>{{ fmt(r.jam_selesai) }}</td><td class="num">{{ fmtMenit(r.menit) }}</td>
+                <td style="white-space:normal;min-width:200px">{{ r.uraian || '–' }}<div v-if="r.catatan_perintah || r.perintah_jam" class="hint" style="margin:2px 0 0">Perintah<span v-if="r.perintah_jam"> {{ r.perintah_jam }}</span><span v-if="r.catatan_perintah">: {{ r.catatan_perintah }}</span></div></td>
                 <td><span class="tag" :class="({LENGKAP: 'ok', DIISI_ADMIN: 'run', BELUM_DIISI: 'late'})[r.status]">{{ ({LENGKAP: 'Lengkap', DIISI_ADMIN: 'Diisi admin', BELUM_DIISI: 'Uraian belum diisi'})[r.status] }}</span></td>
                 <td class="noprint"><button class="btn sec sm" type="button" @click="openUm(r, $event)">{{ r.uraian ? 'Ubah uraian' : 'Isi uraian' }}</button></td></tr></tbody></table></div>
           </div>
@@ -448,8 +451,8 @@ figure.ph figcaption span{color:var(--mute);font-variant-numeric:tabular-nums}
             <div class="card-h"><div><h2>Absen larut tanpa perintah</h2><p class="lead">Pulang melewati batas lembur, tetapi tidak ada perintah pada tanggal itu, jadi tidak dihitung. Catat perintah bila memang lembur yang disetujui.</p></div></div>
             <div v-if="!ll.larut_tanpa_perintah.length" class="empty">Tidak ada.</div>
             <div v-else class="tw"><table><caption class="sr">Absen larut tanpa perintah lembur</caption>
-              <thead><tr><th scope="col">Tanggal</th><th scope="col">Nama</th><th scope="col">Pulang</th><th scope="col" class="num">Lewat jam standar</th><th scope="col">Uraian dari pegawai</th><th scope="col" class="noprint"><span class="sr">Aksi</span></th></tr></thead>
-              <tbody><tr v-for="r in ll.larut_tanpa_perintah" :key="r.tanggal + r.pegawai_id"><td>{{ fmtTgl(r.tanggal) }}</td><td><b>{{ r.nama }}</b></td><td>{{ fmt(r.jam_pulang) }}</td><td class="num">{{ fmtMenit(r.menit) }}</td><td style="white-space:normal;min-width:180px">{{ r.uraian || '–' }}</td>
+              <thead><tr><th scope="col">Tanggal</th><th scope="col">Nama</th><th scope="col">Pulang</th><th scope="col" class="num">Lewat batas (jam standar / jam masuk di hari libur)</th><th scope="col">Uraian dari pegawai</th><th scope="col" class="noprint"><span class="sr">Aksi</span></th></tr></thead>
+              <tbody><tr v-for="r in ll.larut_tanpa_perintah" :key="r.tanggal + r.pegawai_id"><td>{{ fmtTgl(r.tanggal) }}</td><td><b>{{ r.nama }}</b><span v-if="r.libur" class="tag run" style="margin-left:6px">Libur</span></td><td>{{ fmt(r.jam_pulang) }}</td><td class="num">{{ fmtMenit(r.menit) }}</td><td style="white-space:normal;min-width:180px">{{ r.uraian || '–' }}</td>
                 <td class="noprint"><button class="btn sec sm" type="button" @click="openLbm(r, $event)">Catat perintah</button></td></tr></tbody></table></div>
           </div>
 
@@ -457,7 +460,7 @@ figure.ph figcaption span{color:var(--mute);font-variant-numeric:tabular-nums}
             <div class="card-h"><div><h2>Perintah yang belum menghasilkan lembur</h2><p class="lead">Ada perintah, tetapi belum ada absen pulang atau pulang belum melewati batas minimal.</p></div></div>
             <div class="tw"><table><caption class="sr">Perintah tanpa lembur</caption>
               <thead><tr><th scope="col">Tanggal</th><th scope="col">Nama</th><th scope="col">Catatan</th><th scope="col">Keterangan</th></tr></thead>
-              <tbody><tr v-for="r in ll.perintah_tanpa_lembur" :key="r.tanggal + r.pegawai_id"><td>{{ fmtTgl(r.tanggal) }}</td><td><b>{{ r.nama }}</b></td><td style="white-space:normal">{{ r.catatan || '–' }}</td><td>{{ r.alasan }}</td></tr></tbody></table></div>
+              <tbody><tr v-for="r in ll.perintah_tanpa_lembur" :key="r.tanggal + r.pegawai_id"><td>{{ fmtTgl(r.tanggal) }}</td><td><b>{{ r.nama }}</b><span v-if="r.libur" class="tag run" style="margin-left:6px">Libur</span></td><td style="white-space:normal">{{ (r.perintah_jam ? r.perintah_jam + ' · ' : '') + (r.catatan || '–') }}</td><td>{{ r.alasan }}</td></tr></tbody></table></div>
           </div>
         </template>
       </div>
@@ -516,7 +519,7 @@ figure.ph figcaption span{color:var(--mute);font-variant-numeric:tabular-nums}
             <div class="field"><label for="s-tol">Toleransi (menit)</label><input id="s-tol" class="inp" :class="{bad: setErr.toleransi_menit}" type="number" min="0" max="240" v-model="sf.toleransi_menit"><p class="err">{{ setErr.toleransi_menit }}</p></div>
           </div>
           <div class="row3" style="margin-top:-2px"><div class="field"><label for="s-lmb">Batas minimal lembur (menit)</label><input id="s-lmb" class="inp" :class="{bad: setErr.lembur_min_menit}" type="number" min="0" max="240" v-model="sf.lembur_min_menit"><p class="err">{{ setErr.lembur_min_menit }}</p></div></div>
-          <p class="hint" style="margin-top:-6px">Terlambat bila absen masuk lewat jam masuk + toleransi. Lembur dihitung dari jam pulang standar sampai absen pulang terakhir, hanya bila ada perintah lembur (menu Lembur) dan melewati batas minimal.</p>
+          <p class="hint" style="margin-top:-6px">Terlambat bila absen masuk lewat jam masuk + toleransi. Lembur hanya dihitung bila ada perintah lembur (menu Lembur). Hari kerja dihitung dari jam pulang standar; Sabtu, Minggu, dan hari libur pegawai bebas absen di mana saja dan dihitung lembur selama perintah berlaku.</p>
           <div class="field" style="margin-top:14px"><span class="lbl">Hari kerja</span>
             <div class="days"><label v-for="d in hariList" :key="d.v" class="chk"><input type="checkbox" :value="d.v" v-model="sf.hari_kerja"> {{ d.l }}</label></div><p class="err">{{ setErr.hari_kerja }}</p></div>
           <div class="field"><span class="lbl">Hari libur (tanggal merah, cuti bersama)</span>
@@ -634,6 +637,9 @@ figure.ph figcaption span{color:var(--mute);font-variant-numeric:tabular-nums}
     <form @submit.prevent="saveLbm" novalidate>
       <div class="row2"><div class="field"><label for="lbm-m">Tanggal lembur</label><input id="lbm-m" ref="lbmFirst" class="inp" :class="{bad: lbmErr.tanggal}" type="date" :value="lbm.tanggal" @input="onLbmMulai($event.target.value)"><p class="err">{{ lbmErr.tanggal }}</p></div>
         <div class="field"><label for="lbm-s">Sampai tanggal</label><input id="lbm-s" class="inp" :class="{bad: lbmErr.tanggal_selesai}" type="date" v-model="lbm.tanggal_selesai"><p class="err">{{ lbmErr.tanggal_selesai }}</p></div></div>
+      <div class="row2"><div class="field"><label for="lbm-jm">Jam mulai (opsional)</label><input id="lbm-jm" class="inp" :class="{bad: lbmErr.jam_mulai}" type="time" v-model="lbm.jam_mulai"><p class="err">{{ lbmErr.jam_mulai }}</p></div>
+        <div class="field"><label for="lbm-js">Jam selesai (opsional)</label><input id="lbm-js" class="inp" :class="{bad: lbmErr.jam_selesai}" type="time" v-model="lbm.jam_selesai"><p class="err">{{ lbmErr.jam_selesai }}</p></div></div>
+      <p class="hint" style="margin-top:-6px">Kosongkan untuk tanpa batas jam. Bila diisi, hanya waktu pegawai hadir di dalam rentang ini yang dihitung lembur.</p>
       <div class="field"><label for="lbm-cat">Catatan (opsional)</label><input id="lbm-cat" class="inp" v-model="lbm.catatan" maxlength="200" autocomplete="off" placeholder="Mis. penutupan anggaran"></div>
       <div class="field"><span class="lbl">Pegawai ({{ lbm.pegawai_ids.length }} dipilih)</span>
         <div class="tools" style="margin-bottom:8px"><button class="btn sec sm" type="button" @click="lbm.pegawai_ids = aktifList.map(function (p) { return p.pegawai_id; })">Pilih semua</button><button class="btn sec sm" type="button" @click="lbm.pegawai_ids = []">Kosongkan</button></div>
@@ -936,8 +942,8 @@ new Vue({
       const l = this.lap; if (!l) return;
       let head, rows, nama;
       if (jenis === 'rekap') {
-        head = ['Nama', 'Jabatan', 'Hari kerja', 'Hadir', 'Tepat', 'Terlambat', 'Tanpa keterangan', 'Dinas luar', 'ST tanpa absen', 'Tanpa pulang', 'Total jam', 'Lembur', 'Rata-rata masuk'];
-        rows = l.rekap.map((r) => [r.nama, r.jabatan, r.hari_kerja, r.hadir, r.tepat, r.terlambat, r.alpa, r.dinas_luar, r.dinas_tanpa_absen, r.tanpa_pulang, this.fmtMenit(r.total_menit), this.fmtMenit(r.lembur_menit), r.rata_jam_masuk]);
+        head = ['Nama', 'Jabatan', 'Hari kerja', 'Hadir', 'Tepat', 'Terlambat', 'Tanpa keterangan', 'Dinas luar', 'ST tanpa absen', 'Tanpa pulang', 'Total jam', 'Lembur', 'Hadir di hari libur', 'Lembur hari libur', 'Rata-rata masuk'];
+        rows = l.rekap.map((r) => [r.nama, r.jabatan, r.hari_kerja, r.hadir, r.tepat, r.terlambat, r.alpa, r.dinas_luar, r.dinas_tanpa_absen, r.tanpa_pulang, this.fmtMenit(r.total_menit), this.fmtMenit(r.lembur_menit), r.hadir_libur || 0, this.fmtMenit(r.lembur_libur_menit || 0), r.rata_jam_masuk]);
         nama = 'rekap';
       } else {
         head = ['Tanggal', 'Nama', 'Jabatan', 'Masuk', 'Pulang', 'Durasi', 'Lembur', 'Status', 'Keterangan', 'Lokasi masuk', 'Alamat masuk (perkiraan)', 'Lokasi pulang', 'Alamat pulang (perkiraan)'];
@@ -1080,10 +1086,14 @@ new Vue({
       else if (r.code !== 'SESI_HABIS') this.lbErr = r.message || 'Gagal memuat perintah lembur.';
     },
     onLbmMulai(v) { const lama = this.lbm.tanggal; this.lbm.tanggal = v; if (v && (!this.lbm.tanggal_selesai || this.lbm.tanggal_selesai === lama || this.lbm.tanggal_selesai < v)) this.lbm.tanggal_selesai = v; },
+    jamPerintah(r) {
+      const a = r.jam_mulai || '', b = r.jam_selesai || '';
+      return a && b ? a + '–' + b : a ? 'mulai ' + a : b ? 'sampai ' + b : 'Tanpa batas jam';
+    },
     openLbm(pre, ev) {
       this.lastFocus = ev && ev.currentTarget; this.lbmErr = {}; this.lbmMsg = '';
       const t = pre && pre.tanggal ? pre.tanggal : ymd(new Date());
-      this.lbm = { tanggal: t, tanggal_selesai: t, pegawai_ids: pre && pre.pegawai_id ? [pre.pegawai_id] : [], catatan: '' };
+      this.lbm = { tanggal: t, tanggal_selesai: t, pegawai_ids: pre && pre.pegawai_id ? [pre.pegawai_id] : [], catatan: '', jam_mulai: '', jam_selesai: '' };
       if (!this.pegawai.length) this.loadPegawai();
       this.$nextTick(() => this.$refs.lbmFirst && this.$refs.lbmFirst.focus());
     },
@@ -1139,11 +1149,11 @@ new Vue({
       const st = { LENGKAP: 'Lengkap', DIISI_ADMIN: 'Diisi admin', BELUM_DIISI: 'Uraian belum diisi' };
       let head, rows;
       if (jenis === 'rekap') {
-        head = ['Nama', 'Jabatan', 'Hari lembur', 'Total jam lembur', 'Uraian belum diisi'];
-        rows = l.rekap.map((r) => [r.nama, r.jabatan, r.hari, this.fmtMenit(r.menit), r.belum_uraian]);
+        head = ['Nama', 'Jabatan', 'Hari lembur', 'Total jam lembur', 'Hari lembur di hari libur', 'Jam lembur hari libur', 'Uraian belum diisi'];
+        rows = l.rekap.map((r) => [r.nama, r.jabatan, r.hari, this.fmtMenit(r.menit), r.hari_libur || 0, this.fmtMenit(r.menit_libur || 0), r.belum_uraian]);
       } else {
-        head = ['Tanggal', 'Nama', 'Jabatan', 'Mulai', 'Selesai', 'Durasi', 'Uraian pekerjaan', 'Status', 'Catatan perintah'];
-        rows = l.detail.map((r) => [r.tanggal, r.nama, r.jabatan, r.jam_mulai, r.jam_selesai, this.fmtMenit(r.menit), r.uraian, st[r.status], r.catatan_perintah]);
+        head = ['Tanggal', 'Nama', 'Jabatan', 'Mulai', 'Selesai', 'Durasi', 'Uraian pekerjaan', 'Status', 'Hari libur', 'Jam perintah', 'Catatan perintah'];
+        rows = l.detail.map((r) => [r.tanggal, r.nama, r.jabatan, r.jam_mulai, r.jam_selesai, this.fmtMenit(r.menit), r.uraian, st[r.status], r.libur ? 'Ya' : '', r.perintah_jam || '', r.catatan_perintah]);
       }
       const text = '﻿' + [head].concat(rows).map((r) => r.map(csvCell).join(';')).join('\r\n');
       const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
