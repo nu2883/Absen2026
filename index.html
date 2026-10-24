@@ -199,6 +199,7 @@ figure.ph figcaption span{font-variant-numeric:tabular-nums;color:var(--mute)}
         </div>
       </section>
 
+      <div v-if="today.libur" id="liburBanner" class="banner queue" role="status">Hari libur: Anda boleh absen di mana saja. Absen dihitung lembur hanya bila admin sudah mencatat perintah lembur<span v-if="today.perintah_lembur"> (sudah ada{{ today.perintah_jam ? ', jam ' + today.perintah_jam : '' }})</span><span v-else> (belum ada)</span>.</div>
       <div id="loc" class="loc" :class="{bad: loc.state==='denied' || loc.state==='error'}" aria-live="polite">
         <div class="ic" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" :stroke="loc.state==='denied'||loc.state==='error' ? '#A12B22' : '#0F766E'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></div>
         <div><b>{{ locTitle }}</b><span>{{ locSub }}</span><span v-if="locPlace" id="locPlace" style="display:block">{{ locPlace }}</span></div>
@@ -554,6 +555,7 @@ new Vue({
     // Isian uraian lembur muncul bila sudah lewat jam pulang jadwal atau ada perintah lembur hari ini
     askUraian() {
       if (this.today.perintah_lembur || this.view.uraian) return true;
+      if (this.today.libur) return false;
       const std = this.today.jam_pulang_std; return !!std && this.tick > 0 && hm(new Date()) > std;
     },
     monthKey() { return this.month.getFullYear() + '-' + pad(this.month.getMonth() + 1); },
@@ -588,8 +590,8 @@ new Vue({
     dayNum(s) { return parseYmd(s).getDate(); },
     dayName(s) { return HARI[parseYmd(s).getDay()].slice(0, 3); },
     durasi(r) { if (!r.jam_masuk || !r.jam_pulang) return r.jam_masuk ? 'Belum clock out' : 'Tidak hadir'; const m = this.minutes(r.jam_pulang) - this.minutes(r.jam_masuk); return Math.floor(m / 60) + ' jam ' + pad(m % 60) + ' menit'; },
-    tagClass(r) { return !r.jam_masuk ? 'na' : (r.status === 'TERLAMBAT' ? 'late' : (r.jam_pulang ? 'ok' : 'run')); },
-    tagText(r) { return !r.jam_masuk ? 'Tidak hadir' : (r.status === 'TERLAMBAT' ? 'Terlambat' : (r.jam_pulang ? 'Tepat waktu' : 'Bekerja')); },
+    tagClass(r) { return !r.jam_masuk ? 'na' : (r.status === 'TERLAMBAT' ? 'late' : (r.libur || r.status === 'LIBUR') ? 'run' : (r.jam_pulang ? 'ok' : 'run')); },
+    tagText(r) { return !r.jam_masuk ? 'Tidak hadir' : (r.status === 'TERLAMBAT' ? 'Terlambat' : (r.libur || r.status === 'LIBUR') ? 'Hari libur' : (r.jam_pulang ? 'Tepat waktu' : 'Bekerja')); },
     say(msg, kind) { this.toast = { msg, kind: kind || 'ok' }; clearTimeout(this.toastTimer); this.toastTimer = setTimeout(() => { this.toast.msg = ''; }, 4500); },
 
     // --- langkah 1: ID_APP
@@ -716,7 +718,7 @@ new Vue({
       const p = reverseGeocode(L.lat, L.lng); this.geoP = p;
       p.then((a) => { if (this.geoP === p && this.loc.lat === L.lat && this.loc.lng === L.lng) this.loc.alamat = a; });
     },
-    bisaUraian(r) { const std = r.jam_pulang_std || this.jamStd || this.today.jam_pulang_std; return !!(r.jam_pulang && std && r.jam_pulang > std); },
+    bisaUraian(r) { if (r.libur || r.status === 'LIBUR') return !!(r.jam_pulang && r.perintah_lembur); const std = r.jam_pulang_std || this.jamStd || this.today.jam_pulang_std; return !!(r.jam_pulang && std && r.jam_pulang > std); },
     async simpanUraian(tanggal, teks, dari) {
       const u = String(teks || '').trim(); if (!u || this.uraianBusy) return;
       this.uraianBusy = true;
