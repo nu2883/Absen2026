@@ -1008,7 +1008,7 @@ new Vue({
         lat_kantor: s.lat_kantor, lng_kantor: s.lng_kantor, radius_m: s.radius_m, max_akurasi_m: s.max_akurasi_m,
         wajib_radius: String(s.wajib_radius).toUpperCase() !== 'TIDAK', hari_kerja: String(s.hari_kerja || '').split(',').filter(Boolean),
         hari_libur: String(s.hari_libur || '').split(',').filter(Boolean),
-        lembur_min_menit: s.lembur_min_menit === undefined || s.lembur_min_menit === '' ? '30' : s.lembur_min_menit, nama_lokasi: s.nama_lokasi || ''
+        lembur_min_menit: s.lembur_min_menit === undefined || s.lembur_min_menit === '' ? '60' : s.lembur_min_menit, nama_lokasi: s.nama_lokasi || ''
       };
     },
     async loadSettings(quiet) {
